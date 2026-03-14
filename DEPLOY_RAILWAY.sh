@@ -1,0 +1,23 @@
+#!/bin/bash
+# Quick deploy to Railway
+
+echo "🚀 FormPilot Railway Deployment"
+echo ""
+echo "Prerequisites:"
+echo "1. GitHub account with Formpilot repo"
+echo "2. Gemini API key (optional for demo)"
+echo ""
+echo "Steps:"
+echo "1. Go to https://railway.app"
+echo "2. Click 'New Project' → 'Deploy from GitHub'"
+echo "3. Select your Formpilot repo"
+echo "4. In Railway dashboard, go to Variables tab"
+echo "5. Add: GEMINI_API_KEY=your_key_here"
+echo "6. Railway auto-deploys"
+echo ""
+echo "Your live URL: https://formpilot-production-xxxxx.railway.app"
+echo ""
+echo "Test your deployment:"
+echo "  curl https://your-railway-url.railway.app/health"
+echo "  curl -X POST https://your-railway-url.railway.app/api/workflows/demo"
+echo ""

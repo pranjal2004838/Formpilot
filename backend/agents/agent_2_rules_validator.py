@@ -29,7 +29,7 @@ class RulesValidatorAgent(Agent):
     def __init__(self, gemini_api_key: str):
         super().__init__(name="RulesValidator")
         genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Validate eligibility against rules"""

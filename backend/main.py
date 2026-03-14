@@ -1,10 +1,12 @@
 """FastAPI application - Main entry point for FormPilot backend"""
 import os
 import logging
+from pathlib import Path
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -30,18 +32,25 @@ if not GEMINI_API_KEY:
 # Create FastAPI app
 app = FastAPI(
     title="FormPilot Enterprise API",
-    description="Multi-agent form automation system",
-    version="1.0.0"
+    description="AI-powered multi-agent form automation — Airia Hackathon 2026",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static frontend files
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Initialize workflow
 workflow = FormAutomationWorkflow(GEMINI_API_KEY) if GEMINI_API_KEY else None
@@ -288,24 +297,127 @@ async def general_exception_handler(request, exc):
     )
 
 
+# ===== Frontend Route =====
+@app.get("/", response_class=HTMLResponse, tags=["Frontend"], include_in_schema=False)
+async def serve_frontend():
+    """Serve the FormPilot frontend application"""
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return index_path.read_text()
+    return HTMLResponse("""
+    <html><body style="font-family:sans-serif;padding:40px;background:#0a0e1a;color:#f1f5f9">
+    <h1>🚀 FormPilot API is running!</h1>
+    <p>Visit <a href="/docs" style="color:#4f8ef7">/docs</a> for the API documentation.</p>
+    </body></html>
+    """)
+
+
+# ===== Demo Endpoint =====
+@app.post("/api/workflows/demo", tags=["Workflows"])
+async def demo_workflow():
+    """
+    Run a demo workflow with mock data — no API key required.
+    Perfect for judges to test without uploading real documents.
+    """
+    import uuid
+    import base64
+    import io
+    from datetime import datetime
+    from agents.agent_4_pdf_generator import PDFGeneratorAgent
+    from agents.base import AgentInput
+
+    demo_profile = {
+        "fullName": {"value": "PRANJAL KUMAR SINGH", "confidence": 0.97, "source": "gemini"},
+        "dob": {"value": "15/05/1998", "confidence": 0.95, "source": "gemini"},
+        "gender": {"value": "Male", "confidence": 0.99, "source": "gemini"},
+        "address": {
+            "street": {"value": "123, MG Road, Sector 5", "confidence": 0.91, "source": "gemini"},
+            "city": {"value": "Bangalore", "confidence": 0.94, "source": "gemini"},
+            "state": {"value": "Karnataka", "confidence": 0.93, "source": "gemini"},
+            "pincode": {"value": "560001", "confidence": 0.96, "source": "gemini"},
+        },
+        "documentId": {"value": "1234 5678 9012", "confidence": 0.98, "source": "gemini"},
+        "documentType": "aadhaar",
+        "overallConfidence": 0.95,
+        "warnings": [],
+        "extracted_at": datetime.now().isoformat()
+    }
+
+    demo_validation = {
+        "eligible": True,
+        "validationResults": [
+            {"check": "Age Requirement", "passed": True, "requirement": "18+ years", "explanation": "Age 27 — meets 18+ requirement"},
+            {"check": "Valid Identity Document", "passed": True, "requirement": "Aadhaar / Passport / PAN", "explanation": "Aadhaar detected with confidence 95%"},
+            {"check": "Residency Status", "passed": True, "requirement": "Indian resident", "explanation": "Address shows Karnataka, India"},
+            {"check": "Data Completeness", "passed": True, "requirement": "All required fields", "explanation": "Name, DOB, address, document ID all present"},
+        ],
+        "missingFields": [],
+        "notes": "Applicant meets all eligibility requirements for Passport Application.",
+        "country": "IN",
+        "app_type": "passport",
+        "validated_at": datetime.now().isoformat()
+    }
+
+    demo_mappings = [
+        {"formField": "fullName", "profileField": "fullName", "value": "PRANJAL KUMAR SINGH", "transformation": "none", "confidence": 0.97},
+        {"formField": "firstName", "profileField": "fullName", "value": "PRANJAL KUMAR", "transformation": "split", "confidence": 0.95},
+        {"formField": "lastName", "profileField": "fullName", "value": "SINGH", "transformation": "split", "confidence": 0.95},
+        {"formField": "dateOfBirth", "profileField": "dob", "value": "15/05/1998", "transformation": "none", "confidence": 0.95},
+        {"formField": "gender", "profileField": "gender", "value": "Male", "transformation": "none", "confidence": 0.99},
+        {"formField": "address", "profileField": "address.street", "value": "123, MG Road, Sector 5", "transformation": "none", "confidence": 0.91},
+        {"formField": "city", "profileField": "address.city", "value": "Bangalore", "transformation": "none", "confidence": 0.94},
+        {"formField": "state", "profileField": "address.state", "value": "Karnataka", "transformation": "none", "confidence": 0.93},
+        {"formField": "pincode", "profileField": "address.pincode", "value": "560001", "transformation": "none", "confidence": 0.96},
+        {"formField": "documentId", "profileField": "documentId", "value": "1234 5678 9012", "transformation": "none", "confidence": 0.98},
+        {"formField": "documentType", "profileField": "documentType", "value": "Aadhaar Card", "transformation": "none", "confidence": 1.0},
+    ]
+
+    # Generate real PDF
+    agent_4 = PDFGeneratorAgent()
+    pdf_input = AgentInput(
+        workflow_id=str(uuid.uuid4()),
+        metadata={
+            "mappings": demo_mappings,
+            "profile": demo_profile,
+            "form_title": "Passport Application Form - Demo"
+        }
+    )
+    pdf_result = await agent_4.run(pdf_input)
+
+    wf_id = str(uuid.uuid4())
+    return {
+        "workflow_id": wf_id,
+        "status": "completed",
+        "message": "Demo workflow completed successfully",
+        "profile": demo_profile,
+        "validation": demo_validation,
+        "mappings": demo_mappings,
+        "pdf_file_name": pdf_result.data.get("file_name", "demo_form.pdf"),
+        "pdf_base64": pdf_result.data.get("pdf_base64", ""),
+        "demo": True
+    }
+
+
 # ===== Summary Endpoint =====
-@app.get("/", tags=["System"])
-async def root():
-    """API documentation"""
+@app.get("/api", tags=["System"])
+async def api_info():
+    """API information"""
     return {
         "name": "FormPilot Enterprise API",
         "version": "1.0.0",
         "description": "Multi-agent form automation system for government applications",
+        "gemini_configured": GEMINI_API_KEY is not None,
         "endpoints": {
             "health": "GET /health",
+            "frontend": "GET /",
+            "demo": "POST /api/workflows/demo",
             "start_workflow": "POST /api/workflows/start",
             "workflow_status": "GET /api/workflows/{workflow_id}/status",
             "workflow_result": "GET /api/workflows/{workflow_id}/result",
-            "cancel_workflow": "POST /api/workflows/{workflow_id}/cancel",
-            "delete_workflow": "DELETE /api/workflows/{workflow_id}",
             "form_fields": "GET /api/form-fields",
             "supported_documents": "GET /api/supported-documents",
-            "supported_countries": "GET /api/supported-countries"
+            "supported_countries": "GET /api/supported-countries",
+            "api_docs": "GET /docs"
         }
     }
 
@@ -313,9 +425,11 @@ async def root():
 if __name__ == "__main__":
     host = os.getenv("APP_HOST", "0.0.0.0")
     port = int(os.getenv("APP_PORT", 8000))
-    
+
     logger.info(f"Starting FormPilot API on {host}:{port}")
-    
+    logger.info(f"Frontend: http://{host}:{port}/")
+    logger.info(f"API Docs: http://{host}:{port}/docs")
+
     uvicorn.run(
         "main:app",
         host=host,

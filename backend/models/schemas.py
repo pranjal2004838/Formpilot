@@ -59,6 +59,7 @@ class WorkflowOutput(BaseModel):
     mappings: Optional[List[Dict]] = None
     pdf_url: Optional[str] = None
     pdf_base64: Optional[str] = None
+    pdf_file_name: Optional[str] = None
     errors: List[str] = []
     message: Optional[str] = None
     completed_at: Optional[datetime] = None
