@@ -331,6 +331,68 @@ async def _run_simulated_bg(workflow_id: str, request_data: Dict[str, Any]) -> N
                 risk_level=validation.get("riskLevel"),
                 violation_count=len(validation.get("violations", [])),
             )
+
+        if not validation.get("eligible", True) and request_data.get("hitl_enabled", True):
+            state.update(
+                {
+                    "status": "awaiting_approval",
+                    "step": 2,
+                    "step_name": "Rules Validator",
+                    "progress": 40,
+                    "message": "Simulated workflow awaiting human review.",
+                }
+            )
+            _append_audit(
+                state,
+                "simulated_hitl_triggered",
+                workflow_id=workflow_id,
+                reason=validation.get("notes"),
+                violation_count=len(validation.get("violations", [])),
+            )
+
+            hitl_event = state.get("hitl_event")
+            approved = False
+            if hitl_event:
+                try:
+                    await asyncio.wait_for(hitl_event.wait(), timeout=300)
+                except asyncio.TimeoutError:
+                    _append_audit(
+                        state,
+                        "simulated_hitl_timeout",
+                        workflow_id=workflow_id,
+                    )
+                approved = bool(state.get("hitl_decision"))
+
+            if not approved:
+                state.update(
+                    {
+                        "status": "rejected",
+                        "message": "Simulated workflow rejected during human review.",
+                        "completed_at": datetime.now().isoformat(),
+                    }
+                )
+                _append_audit(
+                    state,
+                    "simulated_hitl_decision",
+                    workflow_id=workflow_id,
+                    decision="rejected",
+                )
+                return
+
+            state.update(
+                {
+                    "status": "running",
+                    "progress": 65,
+                    "message": "Simulated workflow approved by reviewer. Continuing…",
+                }
+            )
+            _append_audit(
+                state,
+                "simulated_hitl_decision",
+                workflow_id=workflow_id,
+                decision="approved",
+            )
+
         _append_audit(state, "step_completed", step=2, mode="simulated")
 
         state.update({"step": 3, "step_name": "Field Mapper", "progress": 75, "message": "Simulated field mapping…"})
