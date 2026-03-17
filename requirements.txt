@@ -1,12 +1,13 @@
 # Core
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+anyio==3.7.1
 pydantic==2.5.0
 python-dotenv==1.0.0
 python-multipart==0.0.6
 
 # AI/ML
-google-generativeai>=0.7.0
+google-genai>=1.0.0
 anthropic==0.7.0
 
 # PDF Generation
@@ -32,6 +33,9 @@ boto3==1.29.7
 # String matching
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.23.0
+
+# Async HTTP (Airia, Slack, SharePoint integrations)
+httpx==0.25.2
 
 # Utilities
 requests==2.31.0

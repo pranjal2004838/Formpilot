@@ -28,15 +28,15 @@ class IdentityProfile(BaseModel):
     documentId: ExtractedField
     documentType: str
     overallConfidence: float
-    warnings: List[str] = []
+    warnings: List[str] = Field(default_factory=list)
     extracted_at: datetime = Field(default_factory=datetime.now)
 
 
 class ValidationResult(BaseModel):
     """Eligibility validation result"""
     eligible: bool
-    validationResults: List[Dict] = []
-    missingFields: List[str] = []
+    validationResults: List[Dict] = Field(default_factory=list)
+    missingFields: List[str] = Field(default_factory=list)
     notes: str
     validated_at: datetime = Field(default_factory=datetime.now)
 
@@ -53,13 +53,13 @@ class FormMapping(BaseModel):
 class WorkflowOutput(BaseModel):
     """Complete workflow output"""
     workflow_id: str
-    status: str  # "in_progress" | "completed" | "failed" | "cancelled"
+    status: str  # "in_progress" | "completed" | "failed" | "rejected" | "cancelled"
     profile: Optional[Dict] = None
     validation: Optional[Dict] = None
     mappings: Optional[List[Dict]] = None
     pdf_url: Optional[str] = None
     pdf_base64: Optional[str] = None
     pdf_file_name: Optional[str] = None
-    errors: List[str] = []
+    errors: List[str] = Field(default_factory=list)
     message: Optional[str] = None
     completed_at: Optional[datetime] = None

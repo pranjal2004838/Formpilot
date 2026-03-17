@@ -1,9 +1,20 @@
-"""Main workflow orchestrator - coordinates all 4 agents"""
+"""
+FormPilot Workflow Orchestrator
+================================
+Coordinates the 4-agent pipeline, publishes real-time progress into a shared
+state dict (for async polling), handles HITL (human-in-the-loop) approval via
+asyncio.Event, and dispatches Slack + SharePoint after PDF generation.
+
+Airia integration: when AiriaClient is configured the pipeline is invoked
+via the Airia platform; otherwise identical logic runs locally.
+"""
+import asyncio
+import base64
 import logging
 import time
 import uuid
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 from agents.agent_1_document_analyzer import DocumentAnalyzerAgent
 from agents.agent_2_rules_validator import RulesValidatorAgent
@@ -17,146 +28,359 @@ logger = logging.getLogger(__name__)
 
 class FormAutomationWorkflow:
     """
-    Orchestrates the complete form automation pipeline:
-    1. Document Analyzer (Agent 1) - Extract identity from document
-    2. Rules Validator (Agent 2) - Validate eligibility
-    3. Field Mapper (Agent 3) - Map fields to form
-    4. PDF Generator (Agent 4) - Create filled PDF
+    Orchestrates the 5-step pipeline (4 agents + notification dispatcher):
+      1. Document Analyzer  — Gemini Vision OCR
+      2. Rules Validator    — government eligibility (+ optional HITL)
+      3. Field Mapper       — semantic + fuzzy field matching
+      4. PDF Generator      — ReportLab professional PDF
+      5. Notifications      — Slack alert + SharePoint upload
+
+    Optionally routes through Airia when credentials are available.
     """
-    
-    def __init__(self, gemini_api_key: str):
+
+    def __init__(
+        self,
+        gemini_api_key: str,
+        slack_client=None,
+        sharepoint_client=None,
+        airia_client=None,
+    ) -> None:
         self.gemini_api_key = gemini_api_key
         self.agent_1 = DocumentAnalyzerAgent(gemini_api_key)
         self.agent_2 = RulesValidatorAgent(gemini_api_key)
         self.agent_3 = FieldMapperAgent(gemini_api_key)
         self.agent_4 = PDFGeneratorAgent()
-        self.workflow_id = None
-        self.start_time = None
+        self.slack = slack_client
+        self.sharepoint = sharepoint_client
+        self.airia = airia_client
+        self.workflow_id: Optional[str] = None
+        self.start_time: Optional[float] = None
     
-    async def execute(self, workflow_input: Dict[str, Any]) -> WorkflowOutput:
+    # ------------------------------------------------------------------
+    # Helper: update mutable state dict used by the API for polling
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _upd(
+        state: Optional[Dict],
+        *,
+        step: int = None,
+        step_name: str = None,
+        progress: int = None,
+        message: str = None,
+        status: str = None,
+        **extra,
+    ) -> None:
+        if state is None:
+            return
+        if step is not None:
+            state["step"] = step
+        if step_name is not None:
+            state["step_name"] = step_name
+        if progress is not None:
+            state["progress"] = progress
+        if message is not None:
+            state["message"] = message
+        if status is not None:
+            state["status"] = status
+        for k, v in extra.items():
+            state[k] = v
+
+    @staticmethod
+    def _audit_log(state: Optional[Dict], event: str, **details) -> None:
+        """Append an audit log entry to the state dict."""
+        if state is None:
+            return
+        if "audit_log" not in state:
+            state["audit_log"] = []
+        state["audit_log"].append({
+            "timestamp": datetime.now().isoformat(),
+            "event": event,
+            **details,
+        })
+
+    # ------------------------------------------------------------------
+    # Main execute
+    # ------------------------------------------------------------------
+    async def execute(
+        self,
+        workflow_input: Dict[str, Any],
+        state: Optional[Dict[str, Any]] = None,
+    ) -> WorkflowOutput:
         """
-        Execute the complete workflow:
-        
+        Execute the complete workflow.
+
         Args:
-            workflow_input: Dictionary containing:
-                - document_image: Base64 encoded image of identity document
-                - document_type: "aadhaar", "passport", etc.
-                - form_fields: List of target form field definitions
-                - country: Country code for eligibility check
-                - app_type: Application type for rules validation
-                - form_title: Title of the form being filled
-        
+            workflow_input: {document_image, document_type, form_fields,
+                             country, app_type, form_title,
+                             notify_slack, upload_sharepoint, hitl_enabled}
+            state: optional mutable dict updated in real-time for polling;
+                   must contain 'hitl_event' (asyncio.Event) and
+                   'hitl_decision' (None | bool).
+
         Returns:
-            WorkflowOutput: Complete workflow result with all agent outputs
+            WorkflowOutput with full results.
         """
         
-        self.workflow_id = str(uuid.uuid4())
+        self.workflow_id = state["workflow_id"] if state else str(uuid.uuid4())
         self.start_time = time.time()
+
+        logger.info("Starting workflow %s", self.workflow_id)
         
-        logger.info(f"Starting workflow {self.workflow_id}")
-        
+        # Initialize audit log
+        if state is not None:
+            state["audit_log"] = [{
+                "timestamp": datetime.now().isoformat(),
+                "event": "workflow_start",
+                "workflow_id": self.workflow_id,
+                "document_type": workflow_input.get("document_type"),
+                "country": workflow_input.get("country"),
+            }]
+
         workflow_output = WorkflowOutput(
             workflow_id=self.workflow_id,
-            status="in_progress"
+            status="in_progress",
         )
-        
+
+        # ------ convenience closure ------
+        def upd(**kwargs):
+            self._upd(state, **kwargs)
+
         try:
-            # ===== Agent 1: Document Analysis =====
-            logger.info(f"[{self.workflow_id}] Running Agent 1: Document Analyzer")
-            
-            agent_1_input = AgentInput(
+            # ============================================================
+            # Optionally route through Airia (when configured)
+            # ============================================================
+            if self.airia and self.airia.configured:
+                upd(step=0, step_name="Airia Pipeline", progress=5,
+                    message="Invoking Airia pipeline…",
+                    airia_invoked=True)
+                airia_response = await self.airia.invoke_pipeline(workflow_input)
+                if airia_response:
+                    logger.info("Airia pipeline response received — mapping to WorkflowOutput")
+                    # Map Airia response to WorkflowOutput (structure depends on
+                    # the Airia pipeline's output schema defined in the YAML)
+                    wf_out = airia_response.get("outputs", airia_response)
+                    workflow_output.status = "completed"
+                    workflow_output.profile = wf_out.get("profile")
+                    workflow_output.validation = wf_out.get("validation")
+                    workflow_output.mappings = wf_out.get("mappings")
+                    workflow_output.pdf_base64 = wf_out.get("pdf_base64")
+                    workflow_output.pdf_file_name = wf_out.get("pdf_file_name")
+                    workflow_output.message = "Completed via Airia pipeline"
+                    workflow_output.completed_at = datetime.now()
+                    elapsed_ms = int((time.time() - self.start_time) * 1000)
+                    upd(status="completed", progress=100, step=5,
+                        step_name="Complete",
+                        message=f"Completed via Airia in {elapsed_ms}ms",
+                        profile=workflow_output.profile,
+                        validation=workflow_output.validation,
+                        mappings=workflow_output.mappings,
+                        pdf_base64=workflow_output.pdf_base64,
+                        pdf_file_name=workflow_output.pdf_file_name,
+                        completed_at=datetime.now().isoformat())
+                    return workflow_output
+                # Airia unavailable — fall through to local execution
+                logger.warning("Airia pipeline returned nothing; falling back to local execution.")
+                upd(airia_invoked=False)
+
+            # ============================================================
+            # Agent 1: Document Analysis
+            # ============================================================
+            upd(step=1, step_name="Document Analyzer", progress=10,
+                message="🔍 Analyzing document with Gemini 2.0 Flash Vision…")
+
+            a1_result = await self.agent_1.run(AgentInput(
                 workflow_id=self.workflow_id,
                 metadata={
                     "document_image": workflow_input.get("document_image"),
-                    "document_type": workflow_input.get("document_type", "generic")
-                }
-            )
-            
-            agent_1_result = await self.agent_1.run(agent_1_input)
-            
-            if agent_1_result.status == "error":
-                logger.error(f"[{self.workflow_id}] Agent 1 failed: {agent_1_result.errors}")
+                    "document_type": workflow_input.get("document_type", "generic"),
+                },
+            ))
+
+            if a1_result.status == "error":
+                upd(status="failed", message="Document analysis failed",
+                    errors=a1_result.errors)
                 workflow_output.status = "failed"
-                workflow_output.errors = agent_1_result.errors
+                workflow_output.errors = a1_result.errors
                 workflow_output.message = "Document analysis failed"
                 return workflow_output
-            
-            profile = agent_1_result.data.get("profile", agent_1_result.data)
-            logger.info(f"[{self.workflow_id}] Agent 1 complete: confidence {agent_1_result.confidence:.2%}")
-            
-            # ===== Agent 2: Rules Validation =====
-            logger.info(f"[{self.workflow_id}] Running Agent 2: Rules Validator")
-            
-            agent_2_input = AgentInput(
+
+            profile = a1_result.data.get("profile", a1_result.data)
+            upd(step=1, progress=30,
+                message=f"✅ Document analyzed — confidence {a1_result.confidence:.0%}",
+                profile=profile)
+            logger.info("[%s] Agent 1 done — confidence %.2f",
+                        self.workflow_id, a1_result.confidence)
+
+            # ============================================================
+            # Agent 2: Rules Validation
+            # ============================================================
+            upd(step=2, step_name="Rules Validator", progress=35,
+                message="✅ Validating government eligibility rules…")
+
+            a2_result = await self.agent_2.run(AgentInput(
                 workflow_id=self.workflow_id,
                 metadata={
                     "profile": profile,
                     "country": workflow_input.get("country", "IN"),
-                    "app_type": workflow_input.get("app_type", "visa")
-                }
-            )
-            
-            agent_2_result = await self.agent_2.run(agent_2_input)
-            
-            if agent_2_result.status == "error":
-                logger.warning(f"[{self.workflow_id}] Agent 2 warning: {agent_2_result.errors}")
-                # Don't fail the workflow - validation is informational
-            else:
-                logger.info(f"[{self.workflow_id}] Agent 2 complete: {agent_2_result.data}")
-            
-            validation = agent_2_result.data
-            
-            # ===== Agent 3: Field Mapping =====
-            logger.info(f"[{self.workflow_id}] Running Agent 3: Field Mapper")
-            
-            agent_3_input = AgentInput(
+                    "app_type": workflow_input.get("app_type", "passport"),
+                    "document_type": workflow_input.get("document_type", profile.get("documentType", "generic")),
+                },
+            ))
+
+            validation = a2_result.data
+            upd(validation=validation)
+
+            # ---- HITL (Human-In-The-Loop) ----
+            eligible = validation.get("eligible", True)
+            hitl_enabled = workflow_input.get("hitl_enabled", True)
+
+            if not eligible and hitl_enabled and state is not None:
+                logger.info("[%s] Eligibility failed — triggering HITL", self.workflow_id)
+                self._audit_log(state, "hitl_triggered",
+                               workflow_id=self.workflow_id,
+                               reason=validation.get("notes"),
+                               failed_checks=validation.get("validationResults", []))
+                upd(status="awaiting_approval", step=2,
+                    progress=40,
+                    message="⚠️ Eligibility check failed — awaiting human review…")
+
+                # Send Slack HITL request
+                if self.slack:
+                    app_base = workflow_input.get("app_base_url", "")
+                    await self.slack.send_hitl_request(
+                        self.workflow_id, profile, validation, app_base
+                    )
+
+                # Wait for HITL decision (with 5-minute timeout)
+                hitl_event: asyncio.Event = state.get("hitl_event")
+                if hitl_event:
+                    try:
+                        await asyncio.wait_for(hitl_event.wait(), timeout=300)
+                    except asyncio.TimeoutError:
+                        logger.warning("[%s] HITL timeout — auto-rejecting", self.workflow_id)
+                        state["hitl_decision"] = False
+                        self._audit_log(state, "hitl_timeout",
+                                       workflow_id=self.workflow_id,
+                                       decision="rejected")
+
+                    approved = state.get("hitl_decision", False)
+                    if not approved:
+                        self._audit_log(state, "hitl_decision",
+                                       workflow_id=self.workflow_id,
+                                       decision="rejected")
+                        upd(status="rejected", progress=0,
+                            message="❌ Workflow rejected by reviewer (eligibility failed)")
+                        workflow_output.status = "rejected"
+                        workflow_output.message = "Rejected by human reviewer"
+                        return workflow_output
+
+                    self._audit_log(state, "hitl_decision",
+                                   workflow_id=self.workflow_id,
+                                   decision="approved")
+                    upd(status="running", progress=40,
+                        message="✅ Human reviewer approved — continuing pipeline…")
+
+            upd(step=2, progress=45,
+                message=f"✅ Validation complete — {'eligible' if eligible else 'approved by reviewer'}")
+
+            # ============================================================
+            # Agent 3: Field Mapping
+            # ============================================================
+            upd(step=3, step_name="Field Mapper", progress=50,
+                message="🗺️ Semantically mapping fields with Gemini…")
+
+            a3_result = await self.agent_3.run(AgentInput(
                 workflow_id=self.workflow_id,
                 metadata={
                     "profile": profile,
-                    "form_fields": workflow_input.get("form_fields", [])
-                }
-            )
-            
-            agent_3_result = await self.agent_3.run(agent_3_input)
-            
-            if agent_3_result.status == "error":
-                logger.error(f"[{self.workflow_id}] Agent 3 failed: {agent_3_result.errors}")
+                    "form_fields": workflow_input.get("form_fields", []),
+                },
+            ))
+
+            if a3_result.status == "error":
+                upd(status="failed", message="Field mapping failed", errors=a3_result.errors)
                 workflow_output.status = "failed"
-                workflow_output.errors = agent_3_result.errors
+                workflow_output.errors = a3_result.errors
                 workflow_output.message = "Field mapping failed"
                 return workflow_output
-            
-            mappings = agent_3_result.data.get("mappings", [])
-            logger.info(f"[{self.workflow_id}] Agent 3 complete: mapped {len(mappings)} fields")
-            
-            # ===== Agent 4: PDF Generation =====
-            logger.info(f"[{self.workflow_id}] Running Agent 4: PDF Generator")
-            
-            agent_4_input = AgentInput(
+
+            mappings = a3_result.data.get("mappings", [])
+            upd(step=3, progress=65,
+                message=f"✅ Field mapper complete — {len(mappings)} fields mapped",
+                mappings=mappings)
+
+            # ============================================================
+            # Agent 4: PDF Generation
+            # ============================================================
+            upd(step=4, step_name="PDF Generator", progress=70,
+                message="📄 Generating professional PDF with ReportLab…")
+
+            a4_result = await self.agent_4.run(AgentInput(
                 workflow_id=self.workflow_id,
                 metadata={
                     "mappings": mappings,
                     "profile": profile,
-                    "form_title": workflow_input.get("form_title", "Filled Form")
-                }
-            )
-            
-            agent_4_result = await self.agent_4.run(agent_4_input)
-            
-            if agent_4_result.status == "error":
-                logger.error(f"[{self.workflow_id}] Agent 4 failed: {agent_4_result.errors}")
+                    "form_title": workflow_input.get("form_title", "Filled Form"),
+                },
+            ))
+
+            if a4_result.status == "error":
+                upd(status="failed", message="PDF generation failed", errors=a4_result.errors)
                 workflow_output.status = "failed"
-                workflow_output.errors = agent_4_result.errors
+                workflow_output.errors = a4_result.errors
                 workflow_output.message = "PDF generation failed"
                 return workflow_output
-            
-            pdf_base64 = agent_4_result.data.get("pdf_base64")
-            file_name = agent_4_result.data.get("file_name")
-            logger.info(f"[{self.workflow_id}] Agent 4 complete: PDF generated")
-            
-            # ===== Workflow Complete =====
+
+            pdf_base64 = a4_result.data.get("pdf_base64")
+            pdf_bytes_data = a4_result.data.get("pdf_bytes")
+            file_name = a4_result.data.get("file_name")
+            upd(step=4, progress=82,
+                message="✅ PDF generated successfully",
+                pdf_base64=pdf_base64,
+                pdf_file_name=file_name)
+            logger.info("[%s] Agent 4 done — PDF generated", self.workflow_id)
+
+            # ============================================================
+            # Step 5: Notifications (Slack + SharePoint)
+            # ============================================================
+            upd(step=5, step_name="Notification Dispatcher", progress=88,
+                message="📢 Dispatching Slack notification & SharePoint upload…")
+
+            slack_sent = False
+            sharepoint_url = None
+
+            notify_slack = workflow_input.get("notify_slack", True)
+            upload_sharepoint = workflow_input.get("upload_sharepoint", True)
+            app_base = workflow_input.get("app_base_url", "")
+
+            if self.slack and notify_slack:
+                slack_sent = await self.slack.send_completion_notification(
+                    self.workflow_id, profile, file_name or "", validation, app_base
+                )
+                upd(slack_sent=slack_sent)
+
+            if self.sharepoint and upload_sharepoint and pdf_bytes_data:
+                pdf_bytes: bytes = (
+                    pdf_bytes_data
+                    if isinstance(pdf_bytes_data, bytes)
+                    else base64.b64decode(pdf_bytes_data)
+                )
+                sharepoint_url = await self.sharepoint.upload_pdf(
+                    pdf_bytes,
+                    file_name or "formpilot_output.pdf",
+                    {
+                        "applicant": (profile.get("fullName") or {}).get("value", "Unknown"),
+                        "document_type": workflow_input.get("document_type", ""),
+                        "workflow_id": self.workflow_id,
+                    },
+                )
+                upd(sharepoint_url=sharepoint_url)
+
+            # ============================================================
+            # Complete
+            # ============================================================
             elapsed_ms = int((time.time() - self.start_time) * 1000)
-            
+
             workflow_output.status = "completed"
             workflow_output.profile = profile
             workflow_output.validation = validation
@@ -164,35 +388,75 @@ class FormAutomationWorkflow:
             workflow_output.pdf_base64 = pdf_base64
             workflow_output.pdf_file_name = file_name
             workflow_output.completed_at = datetime.now()
-            workflow_output.message = f"Workflow completed in {elapsed_ms}ms"
-            
+            workflow_output.message = f"Pipeline completed in {elapsed_ms}ms"
+
+            upd(status="completed", progress=100, step=5,
+                step_name="Complete",
+                message=f"🎉 Pipeline complete in {elapsed_ms}ms",
+                completed_at=datetime.now().isoformat(),
+                slack_sent=slack_sent,
+                sharepoint_url=sharepoint_url)
+
             logger.info(
-                f"[{self.workflow_id}] Workflow complete in {elapsed_ms}ms. "
-                f"Confidence: Document={agent_1_result.confidence:.2%}, "
-                f"Mapping={agent_3_result.confidence:.2%}"
+                "[%s] Workflow complete in %dms | doc=%.2f mapping=%.2f | "
+                "slack=%s sharepoint=%s",
+                self.workflow_id, elapsed_ms,
+                a1_result.confidence, a3_result.confidence,
+                slack_sent, bool(sharepoint_url),
             )
             
+            # Log workflow completion
+            self._audit_log(state, "workflow_completed",
+                           workflow_id=self.workflow_id,
+                           elapsed_ms=elapsed_ms,
+                           slack_sent=slack_sent,
+                           sharepoint_uploaded=bool(sharepoint_url))
+            
             return workflow_output
-        
-        except Exception as e:
-            logger.error(f"[{self.workflow_id}] Workflow error: {str(e)}", exc_info=True)
+
+        except Exception as exc:
+            logger.error("[%s] Workflow error: %s", self.workflow_id, exc, exc_info=True)
             workflow_output.status = "failed"
-            workflow_output.errors = [str(e)]
-            workflow_output.message = f"Unexpected error: {str(e)}"
+            workflow_output.errors = [str(exc)]
+            workflow_output.message = f"Unexpected error: {exc}"
+            upd(status="failed", message=f"❌ {exc}", errors=[str(exc)])
+            
+            # Log workflow failure
+            self._audit_log(state, "workflow_failed",
+                           workflow_id=self.workflow_id,
+                           error=str(exc))
+
+            if self.slack:
+                try:
+                    await self.slack.send_error_notification(self.workflow_id, str(exc))
+                except Exception:
+                    pass
+
             return workflow_output
-    
-    def get_default_form_fields(self) -> list:
-        """Return default form field definitions"""
+
+    # ------------------------------------------------------------------
+    # Default form fields
+    # ------------------------------------------------------------------
+    @staticmethod
+    def get_default_form_fields() -> list:
+        """Return default enterprise form field definitions."""
         return [
-            {"name": "fullName", "label": "Full Name", "required": True},
-            {"name": "firstName", "label": "First Name", "required": True},
-            {"name": "lastName", "label": "Last Name", "required": True},
-            {"name": "dateOfBirth", "label": "Date of Birth", "required": True},
-            {"name": "gender", "label": "Gender", "required": True},
-            {"name": "address", "label": "Street Address", "required": True},
-            {"name": "city", "label": "City", "required": True},
-            {"name": "state", "label": "State/Province", "required": True},
-            {"name": "pincode", "label": "Postal Code", "required": True},
-            {"name": "documentId", "label": "Document ID", "required": True},
-            {"name": "documentType", "label": "Document Type", "required": True},
+            {"name": "fullName",     "label": "Full Name",         "required": True},
+            {"name": "firstName",    "label": "First Name",         "required": True},
+            {"name": "lastName",     "label": "Last Name",          "required": True},
+            {"name": "dateOfBirth",  "label": "Date of Birth",      "required": True},
+            {"name": "gender",       "label": "Gender",             "required": True},
+            {"name": "address",      "label": "Street Address",     "required": True},
+            {"name": "city",         "label": "City",               "required": True},
+            {"name": "state",        "label": "State / Province",   "required": True},
+            {"name": "pincode",      "label": "Postal Code",        "required": True},
+            {"name": "country",      "label": "Country",            "required": False},
+            {"name": "documentId",   "label": "Document ID",        "required": True},
+            {"name": "documentType", "label": "Document Type",      "required": True},
+            {"name": "vehicleNumber", "label": "Vehicle Registration Number", "required": False},
+            {"name": "propertyDeedId", "label": "Property Deed Reference", "required": False},
+            {"name": "gstin", "label": "GSTIN", "required": False},
+            {"name": "nationality",  "label": "Nationality",        "required": False},
+            {"name": "phone",        "label": "Phone Number",       "required": False},
+            {"name": "email",        "label": "Email Address",      "required": False},
         ]

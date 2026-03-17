@@ -5,11 +5,11 @@
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Gemini](https://img.shields.io/badge/Gemini-1.5%20Flash-4285F4?logo=google)](https://ai.google.dev)
+[![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-4285F4?logo=google)](https://ai.google.dev)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-> **Airia Hackathon 2026 — Multi-Agent AI Track**  
-> Upload an Aadhaar, Passport, or PAN card. Get a filled, submission-ready government PDF — in under 3 seconds.
+> **Airia AI Agents Hackathon 2026 — Track 2: Active Agents**  
+> Airia-orchestrated 5-step agent pipeline with HITL governance, Slack notifications, and SharePoint archival.
 
 </div>
 
@@ -25,7 +25,7 @@ Every year, **millions of Indians** spend hours filling the same personal data i
 
 ## ✅ The Solution: FormPilot
 
-FormPilot uses a **4-agent AI pipeline** orchestrated with FastAPI to automate the entire form-filling journey:
+FormPilot uses a **5-step Airia pipeline** (4 agents + notification dispatcher) to automate the full form-filling journey:
 
 ```
 📷 Identity Document
@@ -67,7 +67,7 @@ cp .env.example .env
 # Get free key at: https://aistudio.google.com/app/apikey
 ```
 
-> 💡 **No API key?** The `/api/workflows/demo` endpoint works without any API key — perfect for judges!
+> 💡 **No API key?** `/api/workflows/start` automatically runs in simulated mode and still returns a full result with PDF + audit trail.
 
 ### 3. Run
 
@@ -112,7 +112,7 @@ curl -X POST http://localhost:8000/api/workflows/start \
 1. Open http://localhost:8000
 2. Drag & drop your document OR click **"Load Demo Data"**
 3. Click **"Run Instant Demo"** (no API key needed)
-4. Watch the 4-agent pipeline execute in real-time
+4. Watch the 5-step pipeline execute in real-time (4 agents + dispatcher)
 5. Download your filled PDF ⬇️
 
 ---
@@ -147,8 +147,8 @@ Formpilot/
 
 | Agent | Technology | Input | Output |
 |-------|------------|-------|--------|
-| **1 — Document Analyzer** | Gemini 1.5 Flash Vision | Image bytes | `IdentityProfile` with confidence |
-| **2 — Rules Validator** | Gemini 1.5 Flash | Profile + country | Eligibility result + checks |
+| **1 — Document Analyzer** | Gemini 2.0 Flash Vision | Image bytes | `IdentityProfile` with confidence |
+| **2 — Rules Validator** | Gemini 2.0 Flash | Profile + country | Eligibility result + checks |
 | **3 — Field Mapper** | Gemini + FuzzyWuzzy | Profile + form fields | Field mappings with confidence |
 | **4 — PDF Generator** | ReportLab | Mappings + profile | Professional PDF (base64) |
 
@@ -173,10 +173,17 @@ Formpilot/
 |----------|--------|-------------|
 | `/` | GET | Web UI (FormPilot frontend) |
 | `/health` | GET | Health check |
-| `/api/workflows/start` | POST | Process a real document |
-| `/api/workflows/demo` | POST | **Demo — no API key needed** |
+| `/api/workflows/start` | POST | Start workflow (real mode with GEMINI key, simulated mode otherwise) |
+| `/api/workflows/demo` | POST | Instant demo workflow (always available) |
 | `/api/workflows/{id}/status` | GET | Workflow status |
 | `/api/workflows/{id}/result` | GET | Full workflow result |
+| `/api/workflows/{id}/audit` | GET | Full audit trail for workflow decisions and steps |
+| `/api/workflows` | GET | Persistent workflow history |
+| `/api/metrics/summary` | GET | Aggregate operational metrics |
+| `/api/judge/readiness` | GET | Strict Track 2 self-audit readiness report |
+| `/api/integrations/status` | GET | Airia / Slack / SharePoint integration health |
+| `/api/airia/pipeline` | GET | Airia pipeline definition |
+| `/api/airia/tools` | GET | Airia tool manifest |
 | `/api/form-fields` | GET | Default form field definitions |
 | `/api/supported-documents` | GET | Supported document types |
 | `/api/supported-countries` | GET | Supported countries |
@@ -188,11 +195,12 @@ Formpilot/
 
 | Metric | Target | Achieved |
 |--------|--------|----------|
-| OCR Accuracy | 95%+ | ✅ 95%+ (Gemini 1.5 Flash) |
+| OCR Accuracy | 95%+ | ✅ 95%+ (Gemini 2.0 Flash) |
 | End-to-end latency | < 3s | ✅ ~2-3s (API round trip) |
-| Demo (no API) | < 100ms | ✅ ~7ms |
+| Simulated fallback (no API key) | 100% availability | ✅ `/api/workflows/start` still completes with PDF + audit |
 | PDF generation | < 1s | ✅ < 50ms |
 | Fields mapped | 95%+ | ✅ 11/11 (100%) |
+| Persistent auditability | Required for enterprise review | ✅ SQLite workflow + audit trail |
 
 ---
 
@@ -200,11 +208,14 @@ Formpilot/
 
 | Layer | Technology | Why |
 |-------|------------|-----|
-| **AI / Vision** | Google Gemini 1.5 Flash | Best free-tier vision API, native multimodal |
+| **Orchestration** | Airia Platform + Tool Manifest | Track 2-native active agents architecture |
+| **AI / Vision** | Google Gemini 2.0 Flash | High-quality multimodal extraction + reasoning |
 | **Backend** | FastAPI + Python 3.12 | Async, auto OpenAPI docs, production-ready |
 | **Validation** | Pydantic v2 | Type-safe data models with runtime validation |
 | **PDF** | ReportLab 4.0 | Professional government-quality PDF output |
 | **Field Matching** | FuzzyWuzzy + Gemini | Dual-mode: semantic AI + fuzzy fallback |
+| **Persistence** | SQLite workflow store | Durable history + audit events across restarts |
+| **Integrations** | Slack + SharePoint Graph API | Enterprise notifications and archival |
 | **Frontend** | Vanilla HTML/CSS/JS | Zero build step, instant load, served by FastAPI |
 
 ---
@@ -214,7 +225,8 @@ Formpilot/
 - API keys loaded from environment variables, never committed
 - Input validation on all endpoints via Pydantic
 - CORS configured for production deployment
-- No PII stored — in-memory only (no database writes by default)
+- Optional bearer auth enforcement on `/api/tools/*` via `FORMPILOT_API_KEY`
+- Persistent workflow/audit trail in SQLite (`DATABASE_URL`)
 - Base64 image data is processed in-memory and discarded
 
 ---
@@ -265,7 +277,7 @@ docker run -p 8000:8000 -e GEMINI_API_KEY=your_key formpilot
 
 ## 👨‍💻 Author
 
-Built by **Pranjal Kumar Singh** for the **Airia Hackathon 2026 — Multi-Agent AI Track**  
+Built by **Pranjal Kumar Singh** for the **Airia AI Agents Hackathon 2026 — Track 2: Active Agents**  
 GitHub: [@pranjal2004838](https://github.com/pranjal2004838)
 
 ---

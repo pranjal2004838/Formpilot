@@ -1,0 +1,332 @@
+# ============================================================
+# FormPilot — Airia AI Pipeline Configuration
+# ============================================================
+# Deploy this pipeline to the Airia Community platform:
+#   1. Log in to app.airia.io
+#   2. Go to Pipelines → Import YAML
+#   3. Paste this configuration
+#   4. Register the ENV variables below
+#   5. Publish to Airia Community
+#
+# Community URL (once published): https://community.airia.io/FormPilot
+# Track: Track 2 — Active Agents | Airia AI Agents Hackathon 2026
+# ============================================================
+
+name: "FormPilot — Document-to-Form Pipeline"
+version: "2.0.0"
+description: |
+  Enterprise multi-agent pipeline that automates government form filling:
+  1. Extracts identity from ID documents using Gemini 2.0 Flash Vision
+  2. Validates government eligibility with optional HITL checkpoint
+  3. Semantically maps extracted data to target form fields
+  4. Generates a professional, submission-ready PDF
+  5. Sends rich Slack notification + uploads to SharePoint via Graph API
+
+  Reduces 30–60 min manual form filling to < 3 seconds.
+  Supports Aadhaar, Passport, PAN, Driving Licence across 4 countries.
+
+author: "FormPilot Team"
+tags: [enterprise, document-automation, form-filling, government, HR, compliance, HITL]
+category: "Document Processing & Automation"
+track: "Track 2: Active Agents"
+hackathon: "Airia AI Agents Hackathon 2026"
+
+# ============================================================
+# INPUTS
+# ============================================================
+inputs:
+  document_image:
+    type: string
+    description: "Base64-encoded identity document image"
+    required: true
+
+  document_type:
+    type: string
+    enum: [aadhaar, passport, pan, driving_license, generic]
+    default: passport
+    description: "Type of identity document uploaded"
+
+  country:
+    type: string
+    enum: [IN, US, UK, CA]
+    default: IN
+    description: "ISO country code — selects the eligibility rule set"
+
+  app_type:
+    type: string
+    enum: [passport, visa, driver_license, voter_id, hr_onboarding, compliance, generic]
+    default: passport
+    description: "Target application type"
+
+  form_title:
+    type: string
+    default: "Government Application Form"
+
+  form_fields:
+    type: array
+    description: "Target form field definitions (uses defaults if empty)"
+    default: []
+
+  notify_slack:
+    type: boolean
+    default: true
+    description: "Send Slack Block Kit notification on completion"
+
+  upload_sharepoint:
+    type: boolean
+    default: true
+    description: "Upload generated PDF to SharePoint document library"
+
+  hitl_enabled:
+    type: boolean
+    default: true
+    description: "Pause for human review when eligibility check fails"
+
+# ============================================================
+# PIPELINE STEPS
+# ============================================================
+steps:
+
+  - id: step_1_analyze_document
+    name: "Document Analyzer"
+    icon: "🔍"
+    agent: "FormPilot/DocumentAnalyzer"
+    tool_endpoint: "/api/tools/document-analyzer"
+    description: |
+      Extracts structured identity data from uploaded ID documents using
+      Google Gemini 2.0 Flash Vision AI.
+      - Supports: Aadhaar, Passport, PAN, Driving Licence, Generic
+      - Fields: name, DOB, gender, address, document ID
+      - Accuracy: 95%+ with per-field confidence scores
+    inputs:
+      document_image: "{{inputs.document_image}}"
+      document_type:  "{{inputs.document_type}}"
+    outputs:
+      - name: profile
+        schema: IdentityProfile
+        description: "Structured identity with confidence scores per field"
+      - name: confidence
+        type: float
+
+  - id: step_2_validate_rules
+    name: "Rules Validator"
+    icon: "✅"
+    agent: "FormPilot/RulesValidator"
+    tool_endpoint: "/api/tools/rules-validator"
+    description: |
+      Validates extracted identity against government eligibility rules using
+      Gemini 2.0 Flash reasoning. Covers India, USA, UK, and Canada.
+      Supports: passport, visa, driver's licence, HR onboarding, compliance.
+    inputs:
+      profile:  "{{step_1_analyze_document.profile}}"
+      country:  "{{inputs.country}}"
+      app_type: "{{inputs.app_type}}"
+    outputs:
+      - name: validation
+        schema: ValidationResult
+    hitl:
+      enabled:           "{{inputs.hitl_enabled}}"
+      trigger_condition: "{{step_2_validate_rules.validation.eligible}} == false"
+      prompt: |
+        ⚠️ Eligibility Check Failed
+
+        Applicant: {{step_1_analyze_document.profile.fullName.value}}
+        Issue:     {{step_2_validate_rules.validation.notes}}
+
+        Failed checks:
+        {{#each step_2_validate_rules.validation.validationResults}}
+          {{#unless this.passed}}• {{this.check}}: {{this.explanation}}{{/unless}}
+        {{/each}}
+
+        Review and approve to continue processing, or reject.
+      timeout_seconds: 300
+      on_timeout: reject
+      notification:
+        slack: true
+        message_template: hitl_approval_request
+
+  - id: step_3_map_fields
+    name: "Field Mapper"
+    icon: "🗺️"
+    agent: "FormPilot/FieldMapper"
+    tool_endpoint: "/api/tools/field-mapper"
+    description: |
+      Semantically maps extracted identity data to the target form's fields
+      using Gemini reasoning + FuzzyWuzzy fallback matching.
+      Handles name splitting, date format conversion, and address decomposition.
+    inputs:
+      profile:     "{{step_1_analyze_document.profile}}"
+      form_fields: "{{inputs.form_fields}}"
+    outputs:
+      - name: mappings
+        schema: "array[FormMapping]"
+      - name: confidence_scores
+        type: object
+
+  - id: step_4_generate_pdf
+    name: "PDF Generator"
+    icon: "📄"
+    agent: "FormPilot/PDFGenerator"
+    tool_endpoint: "/api/tools/pdf-generator"
+    description: |
+      Generates a professional, government-style PDF pre-populated with
+      mapped field values, using ReportLab. Includes confidence scores
+      and extraction metadata.
+    inputs:
+      mappings:   "{{step_3_map_fields.mappings}}"
+      profile:    "{{step_1_analyze_document.profile}}"
+      form_title: "{{inputs.form_title}}"
+    outputs:
+      - name: pdf_base64
+        type: string
+        description: "Base64-encoded PDF bytes"
+      - name: file_name
+        type: string
+      - name: file_size_bytes
+        type: integer
+
+  - id: step_5_notify_and_store
+    name: "Notification Dispatcher"
+    icon: "📢"
+    agent: "FormPilot/NotificationDispatcher"
+    tool_endpoint: "/api/tools/notification-dispatcher"
+    description: |
+      Multi-system dispatcher (runs when either target is enabled):
+        1. Slack — sends rich Block Kit notification with PDF metadata
+           and HITL action buttons when review is needed
+        2. SharePoint — uploads PDF to document library via Microsoft
+           Graph API, organised by date, with applicant metadata
+    condition:
+      any:
+        - "{{inputs.notify_slack}} == true"
+        - "{{inputs.upload_sharepoint}} == true"
+    inputs:
+      workflow_id:       "{{workflow.id}}"
+      profile:           "{{step_1_analyze_document.profile}}"
+      validation:        "{{step_2_validate_rules.validation}}"
+      pdf_file_name:     "{{step_4_generate_pdf.file_name}}"
+      pdf_base64:        "{{step_4_generate_pdf.pdf_base64}}"
+      notify_slack:      "{{inputs.notify_slack}}"
+      upload_sharepoint: "{{inputs.upload_sharepoint}}"
+    outputs:
+      - name: slack_sent
+        type: boolean
+      - name: sharepoint_url
+        type: string
+
+# ============================================================
+# INTEGRATIONS
+# ============================================================
+integrations:
+  slack:
+    type: slack_incoming_webhook
+    webhook_url: "{{env.SLACK_WEBHOOK_URL}}"
+    channel:     "{{env.SLACK_CHANNEL}}"
+    description: "Completion and HITL approval notifications via Slack Block Kit"
+
+  sharepoint:
+    type: microsoft_sharepoint
+    tenant_id:     "{{env.SHAREPOINT_TENANT_ID}}"
+    client_id:     "{{env.SHAREPOINT_CLIENT_ID}}"
+    client_secret: "{{env.SHAREPOINT_CLIENT_SECRET}}"
+    site_url:      "{{env.SHAREPOINT_SITE_URL}}"
+    library:       "{{env.SHAREPOINT_LIBRARY}}"
+    description:   "PDF storage via Microsoft Graph API (OAuth2 client-credentials)"
+
+# ============================================================
+# TOOL DEFINITIONS  (Airia tool registry)
+# ============================================================
+tools:
+  FormPilot/DocumentAnalyzer:
+    type:     http
+    base_url: "{{env.FORMPILOT_API_URL}}"
+    endpoint: /api/tools/document-analyzer
+    method:   POST
+    auth:
+      type:  bearer
+      token: "{{env.FORMPILOT_API_KEY}}"
+    timeout:  60
+
+  FormPilot/RulesValidator:
+    type:     http
+    base_url: "{{env.FORMPILOT_API_URL}}"
+    endpoint: /api/tools/rules-validator
+    method:   POST
+    auth:
+      type:  bearer
+      token: "{{env.FORMPILOT_API_KEY}}"
+    timeout:  30
+
+  FormPilot/FieldMapper:
+    type:     http
+    base_url: "{{env.FORMPILOT_API_URL}}"
+    endpoint: /api/tools/field-mapper
+    method:   POST
+    auth:
+      type:  bearer
+      token: "{{env.FORMPILOT_API_KEY}}"
+    timeout:  30
+
+  FormPilot/PDFGenerator:
+    type:     http
+    base_url: "{{env.FORMPILOT_API_URL}}"
+    endpoint: /api/tools/pdf-generator
+    method:   POST
+    auth:
+      type:  bearer
+      token: "{{env.FORMPILOT_API_KEY}}"
+    timeout:  30
+
+  FormPilot/NotificationDispatcher:
+    type:     http
+    base_url: "{{env.FORMPILOT_API_URL}}"
+    endpoint: /api/tools/notification-dispatcher
+    method:   POST
+    auth:
+      type:  bearer
+      token: "{{env.FORMPILOT_API_KEY}}"
+    timeout:  30
+
+# ============================================================
+# ENVIRONMENT VARIABLES
+# ============================================================
+environment:
+  required:
+    GEMINI_API_KEY:
+      description: "Google Gemini API key (get free at aistudio.google.com)"
+
+  optional:
+    AIRIA_API_KEY:
+      description: "Airia platform API key"
+    AIRIA_PIPELINE_ID:
+      description: "Airia pipeline ID for this deployment"
+    FORMPILOT_API_URL:
+      description: "Base URL of this FormPilot API (e.g. https://formpilot.up.railway.app)"
+    FORMPILOT_API_KEY:
+      description: "API key for Airia tool authentication"
+    SLACK_WEBHOOK_URL:
+      description: "Slack Incoming Webhook URL"
+    SLACK_CHANNEL:
+      description: "Slack channel (default: #formpilot-notifications)"
+    SHAREPOINT_TENANT_ID:
+      description: "Microsoft 365 tenant ID"
+    SHAREPOINT_CLIENT_ID:
+      description: "Azure AD app client ID"
+    SHAREPOINT_CLIENT_SECRET:
+      description: "Azure AD app client secret"
+    SHAREPOINT_SITE_URL:
+      description: "SharePoint site URL (e.g. https://contoso.sharepoint.com/sites/formpilot)"
+    SHAREPOINT_LIBRARY:
+      description: "Document library name (default: FormPilot Documents)"
+
+# ============================================================
+# OUTPUTS
+# ============================================================
+outputs:
+  profile:         "{{step_1_analyze_document.profile}}"
+  validation:      "{{step_2_validate_rules.validation}}"
+  mappings:        "{{step_3_map_fields.mappings}}"
+  pdf_base64:      "{{step_4_generate_pdf.pdf_base64}}"
+  pdf_file_name:   "{{step_4_generate_pdf.file_name}}"
+  slack_sent:      "{{step_5_notify_and_store.slack_sent}}"
+  sharepoint_url:  "{{step_5_notify_and_store.sharepoint_url}}"

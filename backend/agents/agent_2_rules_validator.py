@@ -2,10 +2,11 @@
 import logging
 from typing import Dict, Any
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
 import json
 
 from agents.base import Agent, AgentInput, AgentOutput
+from compliance.rule_engine import evaluate_compliance
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +29,20 @@ class RulesValidatorAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="RulesValidator")
-        genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.client = genai.Client(api_key=gemini_api_key)
+        self.model_name = "gemini-2.0-flash"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Validate eligibility against rules"""
         
         profile = input_data.metadata.get("profile")
-        country = input_data.metadata.get("country", "india")
+        country = input_data.metadata.get("country", "IN")
         app_type = input_data.metadata.get("app_type", "passport")
+        document_type = (
+            input_data.metadata.get("document_type")
+            or profile.get("documentType")
+            or "generic"
+        )
         
         if not profile:
             return AgentOutput(
@@ -48,15 +54,31 @@ class RulesValidatorAgent(Agent):
             )
         
         try:
-            # Use Gemini to validate against rules
-            validation_result = await self._validate_with_gemini(
-                profile, country, app_type
+            validation_result = evaluate_compliance(
+                profile=profile,
+                country=country,
+                app_type=app_type,
+                document_type=document_type,
             )
+
+            # Add optional Gemini risk narrative without changing deterministic pass/fail logic.
+            try:
+                ai_review = await self._validate_with_gemini(
+                    profile,
+                    country,
+                    app_type,
+                    document_type,
+                    validation_result,
+                )
+                if ai_review:
+                    validation_result["aiReview"] = ai_review
+            except Exception as ai_error:
+                logger.warning("Gemini review unavailable, deterministic checks used: %s", ai_error)
             
             return AgentOutput(
                 status="success",
                 data=validation_result,
-                confidence=0.95
+                confidence=max(float(validation_result.get("complianceScore", 0)) / 100.0, 0.80),
             )
         
         except Exception as e:
@@ -73,44 +95,44 @@ class RulesValidatorAgent(Agent):
         self, 
         profile: Dict[str, Any], 
         country: str, 
-        app_type: str
+        app_type: str,
+        document_type: str,
+        deterministic_result: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Validate against rules using Gemini"""
+        """Generate a concise AI risk narrative for reviewer context."""
         
         prompt = f"""
-You are an expert in government eligibility requirements. 
+You are a government compliance analyst.
 
-Check if this person is eligible for a {country.upper()} {app_type.upper()} based on their profile:
+Review this applicant and provide ONLY additional risk context.
+Do not recompute eligibility.
 
 Profile:
 - Name: {profile.get('fullName', {}).get('value', 'Unknown')}
 - DOB: {profile.get('dob', {}).get('value', 'Unknown')}
 - Gender: {profile.get('gender', {}).get('value', 'Unknown')}
-- Document Type: {profile.get('documentType', 'Unknown')}
+- Document Type: {document_type}
 
-Rules by country:
-- INDIA: Passport requires 18+ age, Indian resident, valid ID
-- US: Visa requires 18+ age, valid passport, financial proof
-- UK: Visa requires 18+ age, valid passport, financial proof
-- CANADA: Visa requires 18+ age, valid passport, clean background
+Deterministic compliance output:
+{json.dumps(deterministic_result, indent=2)}
 
 Return ONLY valid JSON (no markdown):
 {{
-    "eligible": true/false,
-    "validationResults": [
-        {{"check": "age_requirement", "passed": true, "requirement": "18+ years", "explanation": "..."}},
-        {{"check": "residency", "passed": true, "requirement": "Valid residence", "explanation": "..."}}
-    ],
-    "missingFields": [],
-    "notes": "Brief explanation of eligibility",
-    "confidence": 0.95
+  "summary": "One sentence reviewer summary",
+  "additionalRisks": [
+    {{"risk": "...", "severity": "low|medium|high", "rationale": "..."}}
+  ],
+  "recommendedReviewAction": "approve|manual_review|reject"
 }}
 """
         
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+        )
         
         try:
-            response_text = response.text
+            response_text = self._response_text(response)
             
             # Clean markdown if present
             if "```json" in response_text:
@@ -119,26 +141,39 @@ Return ONLY valid JSON (no markdown):
                 response_text = response_text.split("```")[1].split("```")[0].strip()
             
             result = json.loads(response_text)
-            
+
             return {
-                "eligible": result.get("eligible", False),
-                "validationResults": result.get("validationResults", []),
-                "missingFields": result.get("missingFields", []),
-                "notes": result.get("notes", ""),
-                "country": country,
+                "summary": result.get("summary", "AI review completed."),
+                "additionalRisks": result.get("additionalRisks", []),
+                "recommendedReviewAction": result.get("recommendedReviewAction", "manual_review"),
+                "generated_at": datetime.now().isoformat(),
+                "country": str(country).upper(),
                 "app_type": app_type,
-                "validated_at": datetime.now().isoformat()
             }
         
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse validation response: {response_text}")
-            # Fallback: assume eligible if parsing fails
-            return {
-                "eligible": True,
-                "validationResults": [],
-                "missingFields": [],
-                "notes": "Auto-validation passed (parsing error)",
-                "country": country,
-                "app_type": app_type,
-                "validated_at": datetime.now().isoformat()
-            }
+            raise Exception(f"Invalid JSON from Gemini review: {e}")
+
+    @staticmethod
+    def _response_text(response: Any) -> str:
+        text = (getattr(response, "text", None) or "").strip()
+        if text:
+            return text
+
+        candidates = getattr(response, "candidates", None) or []
+        chunks = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if not parts:
+                continue
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    chunks.append(part_text)
+
+        text = "\n".join(chunks).strip()
+        if not text:
+            raise Exception("Empty response from Gemini model")
+        return text

@@ -1,324 +1,463 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FormPilot — AI-Powered Form Automation</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FormPilot Enterprise — Airia AI Agent</title>
   <style>
-    /* ===================== DESIGN SYSTEM ===================== */
+    /* ==================== DESIGN SYSTEM ==================== */
     :root {
-      --bg:          #0a0e1a;
-      --surface:     #111827;
-      --surface2:    #1a2236;
-      --surface3:    #1f2d42;
-      --border:      #2d3a52;
-      --primary:     #4f8ef7;
-      --primary-glow:#3b6fd4;
-      --accent:      #7c5cbf;
-      --success:     #22c55e;
-      --warning:     #f59e0b;
-      --error:       #ef4444;
-      --text:        #f1f5f9;
-      --text-muted:  #8b9bb4;
-      --text-dim:    #5a6a84;
-      --radius:      12px;
-      --radius-sm:   8px;
-      --shadow:      0 4px 32px rgba(0,0,0,0.45);
+      --bg:        #0a0e1a;
+      --surface:   #111827;
+      --surface2:  #1a2236;
+      --surface3:  #1f2d42;
+      --border:    #2d3a52;
+      --primary:   #4f8ef7;
+      --pri-glow:  #3b6fd4;
+      --accent:    #7c5cbf;
+      --cyan:      #22d3ee;
+      --success:   #22c55e;
+      --warning:   #f59e0b;
+      --error:     #ef4444;
+      --text:      #f1f5f9;
+      --muted:     #8b9bb4;
+      --dim:       #5a6a84;
+      --r:         12px;
+      --rs:        8px;
+      --shadow:    0 4px 32px rgba(0,0,0,.45);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
     body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;min-height:100vh;line-height:1.6}
 
-    /* ===================== ANIMATIONS ===================== */
-    @keyframes fadeUp   {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes pulse    {0%,100%{opacity:1}50%{opacity:.4}}
-    @keyframes spin     {to{transform:rotate(360deg)}}
-    @keyframes glow     {0%,100%{box-shadow:0 0 10px rgba(79,142,247,.3)}50%{box-shadow:0 0 30px rgba(79,142,247,.8)}}
-    @keyframes progressBar{from{width:0}to{width:100%}}
-    @keyframes slideIn  {from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
-    @keyframes shimmer  {from{background-position:-200% 0}to{background-position:200% 0}}
-    @keyframes float    {0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-    @keyframes dot      {0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+    /* ==================== KEYFRAMES ==================== */
+    @keyframes fadeUp {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse  {0%,100%{opacity:1}50%{opacity:.4}}
+    @keyframes spin   {to{transform:rotate(360deg)}}
+    @keyframes glow   {0%,100%{box-shadow:0 0 12px rgba(79,142,247,.3)}50%{box-shadow:0 0 32px rgba(79,142,247,.8)}}
+    @keyframes float  {0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes slide  {from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes dot    {0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+    @keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+    @keyframes barIn  {from{width:0}to{width:var(--w,100%)}}
+    @keyframes hitlIn {from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 
-    .fade-up    {animation:fadeUp .6s ease both}
-    .pulse      {animation:pulse 2s ease infinite}
-    .float      {animation:float 3s ease-in-out infinite}
-    .glow       {animation:glow 2s ease-in-out infinite}
+    .fade-up{animation:fadeUp .6s ease both}
+    .pulse  {animation:pulse 2s ease infinite}
+    .float  {animation:float 3s ease-in-out infinite}
+    .glow   {animation:glow 2s ease-in-out infinite}
+    .spin   {animation:spin .8s linear infinite}
 
-    /* ===================== LAYOUT ===================== */
-    .container{max-width:1100px;margin:0 auto;padding:0 24px}
-
-    /* ===================== NAV ===================== */
-    nav{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px}
-    .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
+    /* ==================== NAV ==================== */
+    nav{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px}
+    .nav-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:62px}
     .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.2rem;color:var(--text)}
-    .nav-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
-    .nav-badge{background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:20px;padding:3px 10px;font-size:.7rem;font-weight:600;color:#fff;letter-spacing:.5px}
-    .nav-links{display:flex;gap:24px;align-items:center}
-    .nav-links a{color:var(--text-muted);text-decoration:none;font-size:.9rem;transition:color .2s}
-    .nav-links a:hover{color:var(--text)}
+    .nav-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .nav-badges{display:flex;gap:8px;flex-wrap:wrap}
+    .nbadge{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:16px;font-size:.72rem;font-weight:600;border:1px solid}
+    .nbadge.airia {background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.35);color:var(--cyan)}
+    .nbadge.track2{background:rgba(124,92,191,.12);border-color:rgba(124,92,191,.4);color:#c4b5fd}
+    .nbadge.ent   {background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.35);color:var(--primary)}
+    .nbadge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+    .nav-right{display:flex;align-items:center;gap:16px}
+    .int-badges{display:flex;gap:6px}
+    .int-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;font-size:.72rem;font-weight:600;border:1px solid;transition:all .2s;cursor:default}
+    .int-badge.on {background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--success)}
+    .int-badge.off{background:rgba(90,106,132,.08);border-color:var(--border);color:var(--dim)}
     .btn-demo-nav{background:var(--primary);color:#fff;padding:7px 18px;border-radius:20px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
-    .btn-demo-nav:hover{background:var(--primary-glow);transform:translateY(-1px)}
+    .btn-demo-nav:hover{background:var(--pri-glow);transform:translateY(-1px)}
 
-    /* ===================== HERO ===================== */
-    .hero{padding:100px 24px 80px;text-align:center;position:relative;overflow:hidden}
-    .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(ellipse,rgba(79,142,247,.12) 0,transparent 70%);pointer-events:none}
+    /* ==================== HERO ==================== */
+    .hero{padding:90px 24px 70px;text-align:center;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-160px;left:50%;transform:translateX(-50%);width:900px;height:900px;background:radial-gradient(ellipse,rgba(79,142,247,.1) 0,transparent 70%);pointer-events:none}
     .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:20px;padding:6px 16px;font-size:.8rem;color:var(--primary);margin-bottom:24px;font-weight:600}
-    .hero-eyebrow span{width:8px;height:8px;background:var(--primary);border-radius:50%;display:inline-block}
-    .hero h1{font-size:clamp(2rem,5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:20px;letter-spacing:-1px}
-    .hero h1 .highlight{background:linear-gradient(135deg,var(--primary),var(--accent) 50%,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .hero p{font-size:1.1rem;color:var(--text-muted);max-width:580px;margin:0 auto 40px;line-height:1.7}
-    .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-    .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-glow));color:#fff;padding:13px 28px;border-radius:30px;font-size:1rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 20px rgba(79,142,247,.4)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(79,142,247,.5)}
-    .btn-secondary{background:transparent;color:var(--text);padding:13px 28px;border-radius:30px;font-size:1rem;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all .2s}
-    .btn-secondary:hover{border-color:var(--primary);color:var(--primary)}
+    .hero-eyebrow span{width:7px;height:7px;background:var(--primary);border-radius:50%;display:inline-block;animation:pulse 2s ease infinite}
+    .hero h1{font-size:clamp(1.9rem,5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:20px;letter-spacing:-1px}
+    .hero h1 .hl{background:linear-gradient(135deg,var(--primary),var(--accent) 50%,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero p{font-size:1.05rem;color:var(--muted);max-width:600px;margin:0 auto 36px;line-height:1.75}
+    .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn-pri{background:linear-gradient(135deg,var(--primary),var(--pri-glow));color:#fff;padding:13px 28px;border-radius:30px;font-size:.98rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 20px rgba(79,142,247,.4)}
+    .btn-pri:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(79,142,247,.5)}
+    .btn-sec{background:transparent;color:var(--text);padding:13px 28px;border-radius:30px;font-size:.98rem;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all .2s}
+    .btn-sec:hover{border-color:var(--primary);color:var(--primary)}
     .hero-stats{display:flex;gap:40px;justify-content:center;margin-top:60px;flex-wrap:wrap}
-    .stat{text-align:center}
-    .stat-value{font-size:2rem;font-weight:700;color:var(--primary)}
-    .stat-label{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+    .stat-v{font-size:2rem;font-weight:700;color:var(--primary)}
+    .stat-l{font-size:.78rem;color:var(--muted);margin-top:2px}
 
-    /* ===================== HOW IT WORKS ===================== */
-    .section{padding:80px 24px}
-    .section-title{text-align:center;margin-bottom:60px}
-    .section-title h2{font-size:2rem;font-weight:700;margin-bottom:12px}
-    .section-title p{color:var(--text-muted);font-size:1rem;max-width:500px;margin:0 auto}
+    /* ==================== AIRIA CALLOUT ==================== */
+    .airia-callout{background:linear-gradient(135deg,rgba(34,211,238,.07),rgba(124,92,191,.07));border:1px solid rgba(34,211,238,.25);border-radius:var(--r);padding:24px 28px;margin:0 auto 40px;max-width:800px;display:flex;align-items:flex-start;gap:20px}
+    .airia-callout-icon{font-size:2.2rem;flex-shrink:0;margin-top:2px}
+    .airia-callout h3{font-size:1rem;font-weight:700;color:var(--cyan);margin-bottom:6px}
+    .airia-callout p{font-size:.85rem;color:var(--muted);line-height:1.6}
+    .airia-steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .airia-step{display:flex;align-items:center;gap:6px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);border-radius:20px;padding:4px 12px;font-size:.75rem;color:var(--cyan);font-weight:600}
 
-    .pipeline{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
-    .pipeline-step{flex:1;min-width:180px;max-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;position:relative;transition:all .3s}
-    .pipeline-step.active{border-color:var(--primary);background:var(--surface2);box-shadow:0 0 20px rgba(79,142,247,.2)}
-    .pipeline-step.done{border-color:var(--success);background:rgba(34,197,94,.05)}
-    .pipeline-step.error{border-color:var(--error);background:rgba(239,68,68,.05)}
-    .pipeline-arrow{color:var(--text-dim);font-size:1.4rem;padding:0 8px;flex-shrink:0}
-    .step-icon{width:48px;height:48px;border-radius:12px;background:var(--surface3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;transition:all .3s}
-    .pipeline-step.active .step-icon{background:rgba(79,142,247,.2);animation:glow 2s ease-in-out infinite}
-    .pipeline-step.done .step-icon{background:rgba(34,197,94,.2)}
-    .step-num{font-size:.7rem;color:var(--text-dim);font-weight:600;letter-spacing:1px;margin-bottom:4px}
-    .step-name{font-size:.9rem;font-weight:600;margin-bottom:4px}
-    .step-desc{font-size:.75rem;color:var(--text-muted);line-height:1.4}
-    .step-status{margin-top:10px;font-size:.75rem;font-weight:600;height:18px}
-    .step-status.running{color:var(--primary)}
-    .step-status.done{color:var(--success)}
-    .step-status.error{color:var(--error)}
+    /* ==================== SECTION ==================== */
+    .section{padding:60px 24px}
+    .container{max-width:1140px;margin:0 auto}
+    .sec-title{text-align:center;margin-bottom:50px}
+    .sec-title h2{font-size:1.9rem;font-weight:700;margin-bottom:10px}
+    .sec-title p{color:var(--muted);font-size:.97rem;max-width:520px;margin:0 auto}
 
-    /* ===================== UPLOAD ZONE ===================== */
-    .upload-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;margin-bottom:32px}
-    .upload-zone{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:48px 20px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
-    .upload-zone:hover,.upload-zone.drag-over{border-color:var(--primary);background:rgba(79,142,247,.04)}
-    .upload-zone.has-file{border-color:var(--success);background:rgba(34,197,94,.04)}
-    .upload-icon{font-size:3rem;margin-bottom:16px;display:block}
-    .upload-title{font-size:1.1rem;font-weight:600;margin-bottom:8px}
-    .upload-subtitle{font-size:.85rem;color:var(--text-muted);margin-bottom:16px}
-    .upload-formats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
-    .format-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.75rem;color:var(--text-muted)}
-    .upload-input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
-    .upload-preview{display:none;align-items:center;gap:16px;margin-top:20px;padding:16px;background:var(--surface2);border-radius:var(--radius-sm)}
+    /* ==================== PIPELINE ==================== */
+    .pipeline{display:flex;align-items:stretch;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:32px}
+    .ps{flex:1;min-width:160px;max-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px 16px;text-align:center;position:relative;transition:all .3s}
+    .ps.active{border-color:var(--primary);background:var(--surface2);box-shadow:0 0 24px rgba(79,142,247,.18)}
+    .ps.done  {border-color:var(--success);background:rgba(34,197,94,.04)}
+    .ps.warn  {border-color:var(--warning);background:rgba(245,158,11,.04)}
+    .ps.err   {border-color:var(--error);background:rgba(239,68,68,.04)}
+    .ps.hitl  {border-color:var(--warning);background:rgba(245,158,11,.06);box-shadow:0 0 20px rgba(245,158,11,.15)}
+    .pa{color:var(--dim);font-size:1.2rem;padding:0 6px;flex-shrink:0;display:flex;align-items:center}
+    .ps-icon{width:44px;height:44px;border-radius:11px;background:var(--surface3);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px;transition:all .3s}
+    .ps.active .ps-icon{background:rgba(79,142,247,.18);animation:glow 2s ease-in-out infinite}
+    .ps.done   .ps-icon{background:rgba(34,197,94,.18)}
+    .ps.hitl   .ps-icon{background:rgba(245,158,11,.2);animation:pulse 1.5s ease infinite}
+    .ps-num{font-size:.68rem;color:var(--dim);font-weight:700;letter-spacing:1px;margin-bottom:3px}
+    .ps-name{font-size:.88rem;font-weight:700;margin-bottom:4px}
+    .ps-desc{font-size:.73rem;color:var(--muted);line-height:1.35}
+    .ps-st{margin-top:8px;font-size:.73rem;font-weight:700;height:16px;transition:color .3s}
+    .ps-st.run{color:var(--primary)}
+    .ps-st.done{color:var(--success)}
+    .ps-st.err{color:var(--error)}
+    .ps-st.wait{color:var(--warning)}
+    .ps-st.hitl{color:var(--warning)}
+
+    /* ==================== UPLOAD ==================== */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:24px}
+    .card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+    .card-hd-l{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700}
+    .card-hd-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px}
+
+    .upload-zone{border:2px dashed var(--border);border-radius:var(--rs);padding:44px 20px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--primary);background:rgba(79,142,247,.04)}
+    .upload-zone.ready{border-color:var(--success);background:rgba(34,197,94,.04)}
+    .uz-icon{font-size:2.8rem;margin-bottom:14px;display:block}
+    .uz-title{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+    .uz-sub{font-size:.83rem;color:var(--muted);margin-bottom:14px}
+    .fmt-badges{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+    .fmt{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:.73rem;color:var(--muted)}
+    input[type=file].upinput{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+    .upload-preview{display:none;align-items:center;gap:14px;margin-top:18px;padding:14px 16px;background:var(--surface2);border-radius:var(--rs)}
     .upload-preview.show{display:flex}
-    .preview-img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--success)}
-    .preview-info{flex:1;text-align:left}
-    .preview-name{font-weight:600;font-size:.9rem;margin-bottom:4px}
-    .preview-size{font-size:.78rem;color:var(--text-muted)}
-    .preview-remove{background:none;border:none;color:var(--error);cursor:pointer;font-size:1.1rem;padding:4px}
+    .prev-img{width:76px;height:76px;object-fit:cover;border-radius:8px;border:2px solid var(--success)}
+    .prev-info{flex:1;text-align:left}
+    .prev-name{font-weight:700;font-size:.9rem;margin-bottom:3px}
+    .prev-sz{font-size:.76rem;color:var(--muted)}
+    .btn-rem{background:none;border:none;color:var(--error);cursor:pointer;font-size:1rem;padding:4px}
 
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
-    .form-group label{display:block;font-size:.82rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;letter-spacing:.3px}
-    .form-group select,.form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:.9rem;outline:none;transition:border-color .2s}
-    .form-group select:focus,.form-group input:focus{border-color:var(--primary)}
-    .form-group select option{background:var(--surface2)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:22px}
+    .fg label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.3px;text-transform:uppercase}
+    .fg select,.fg input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:.88rem;outline:none;transition:border-color .2s}
+    .fg select:focus,.fg input:focus{border-color:var(--primary)}
+    .fg select option{background:var(--surface2)}
 
-    /* ===================== PROCESS BUTTON ===================== */
-    .process-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;font-weight:700;cursor:pointer;margin-top:24px;transition:all .3s;letter-spacing:.3px;position:relative;overflow:hidden}
-    .process-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 30px rgba(79,142,247,.4)}
-    .process-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-    .process-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-100%);transition:transform .5s}
-    .process-btn:hover:not(:disabled)::after{transform:translateX(100%)}
+    /* ==================== INTEGRATION SECTION ==================== */
+    .integrations-panel{background:linear-gradient(135deg,rgba(34,211,238,.04),rgba(124,92,191,.04));border:1px solid rgba(34,211,238,.2);border-radius:var(--r);padding:24px 28px;margin-bottom:24px}
+    .int-panel-hd{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+    .int-panel-hd h3{font-size:.97rem;font-weight:700}
+    .int-panel-hd .lbl{font-size:.73rem;color:var(--cyan);background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);padding:2px 10px;border-radius:12px;font-weight:600}
+    .int-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+    .int-toggle{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .3s;cursor:pointer}
+    .int-toggle:hover{border-color:var(--muted)}
+    .int-toggle.active{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
+    .int-toggle-icon{font-size:1.6rem;flex-shrink:0}
+    .int-toggle-info{flex:1}
+    .int-toggle-name{font-size:.88rem;font-weight:700;margin-bottom:1px}
+    .int-toggle-status{font-size:.73rem;color:var(--muted)}
+    .int-toggle.active .int-toggle-status{color:var(--success)}
+    .toggle-sw{width:36px;height:20px;background:var(--surface3);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;border:1px solid var(--border);flex-shrink:0}
+    .toggle-sw.on{background:var(--success);border-color:var(--success)}
+    .toggle-sw::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .2s}
+    .toggle-sw.on::after{transform:translateX(16px)}
 
-    /* ===================== PROGRESS ===================== */
-    .progress-section{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin-bottom:24px}
-    .progress-section.show{display:block;animation:fadeUp .4s ease}
-    .progress-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-    .progress-title{font-size:1.1rem;font-weight:700}
-    .progress-pct{font-size:1rem;font-weight:700;color:var(--primary)}
-    .progress-bar-wrap{background:var(--surface2);border-radius:999px;height:8px;overflow:hidden;margin-bottom:24px}
-    .progress-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--accent));transition:width .8s ease}
-    .progress-log{background:var(--surface2);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:.8rem;color:var(--text-muted);max-height:160px;overflow-y:auto;line-height:1.8}
-    .log-line{display:flex;gap:10px;align-items:flex-start;animation:slideIn .3s ease}
-    .log-time{color:var(--text-dim);flex-shrink:0}
-    .log-msg.ok{color:var(--success)}
-    .log-msg.info{color:var(--primary)}
-    .log-msg.warn{color:var(--warning)}
-    .log-msg.err{color:var(--error)}
+    /* ==================== RUN BUTTON ==================== */
+    .run-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;border-radius:var(--rs);font-size:1.02rem;font-weight:700;cursor:pointer;transition:all .3s;letter-spacing:.3px;position:relative;overflow:hidden}
+    .run-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 30px rgba(79,142,247,.4)}
+    .run-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .run-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-100%);transition:transform .5s}
+    .run-btn:hover:not(:disabled)::after{transform:translateX(100%)}
 
-    /* ===================== RESULTS ===================== */
-    .results-section{display:none;animation:fadeUp .5s ease}
-    .results-section.show{display:block}
-    .results-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
-    .result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
-    .result-card.full{grid-column:1/-1}
-    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-    .card-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700}
-    .card-title .icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px}
-    .card-badge{font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:20px}
-    .badge-success{background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.3)}
-    .badge-warning{background:rgba(245,158,11,.15);color:var(--warning);border:1px solid rgba(245,158,11,.3)}
-    .badge-info{background:rgba(79,142,247,.15);color:var(--primary);border:1px solid rgba(79,142,247,.3)}
+    /* ==================== PROGRESS ==================== */
+    .prog-section{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:22px}
+    .prog-section.show{display:block;animation:fadeUp .4s ease}
+    .prog-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .prog-title{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+    .prog-pct{font-size:1rem;font-weight:700;color:var(--primary)}
+    .prog-bar-wrap{background:var(--surface2);border-radius:999px;height:6px;overflow:hidden;margin-bottom:20px}
+    .prog-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:999px;transition:width .7s ease;width:0}
+    .prog-log{background:var(--surface2);border-radius:var(--rs);padding:14px;font-family:'SF Mono','Fira Code',monospace;font-size:.78rem;color:var(--muted);max-height:140px;overflow-y:auto;line-height:1.9}
+    .logln{display:flex;gap:10px;animation:slide .3s ease}
+    .logt{color:var(--dim);flex-shrink:0}
+    .logm.ok{color:var(--success)}
+    .logm.info{color:var(--primary)}
+    .logm.warn{color:var(--warning)}
+    .logm.err{color:var(--error)}
 
-    .field-grid{display:grid;gap:10px}
-    .field-item{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;transition:border-color .2s}
-    .field-item:hover{border-color:var(--border)}
-    .field-label{font-size:.78rem;color:var(--text-muted);font-weight:500;min-width:100px;flex-shrink:0}
-    .field-value{font-size:.88rem;font-weight:600;text-align:right;word-break:break-all}
-    .field-conf{font-size:.7rem;padding:2px 8px;border-radius:10px;flex-shrink:0}
-    .conf-high{background:rgba(34,197,94,.15);color:var(--success)}
-    .conf-med {background:rgba(245,158,11,.15);color:var(--warning)}
-    .conf-low {background:rgba(239,68,68,.15);color:var(--error)}
+    /* ==================== HITL PANEL ==================== */
+    .hitl-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;padding:20px}
+    .hitl-overlay.show{display:flex;animation:fadeUp .3s ease}
+    .hitl-modal{background:var(--surface);border:1px solid rgba(245,158,11,.4);border-radius:var(--r);padding:36px;max-width:580px;width:100%;box-shadow:0 0 60px rgba(245,158,11,.15),0 20px 80px rgba(0,0,0,.6);animation:hitlIn .3s ease}
+    .hitl-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+    .hitl-header .icon{font-size:2.4rem}
+    .hitl-header h2{font-size:1.3rem;font-weight:800}
+    .hitl-header p{font-size:.85rem;color:var(--muted);margin-top:3px}
+    .hitl-body{background:var(--surface2);border-radius:var(--rs);padding:18px;margin-bottom:22px}
+    .hitl-checks{display:grid;gap:8px;margin-top:14px}
+    .hitl-check{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:6px;font-size:.83rem}
+    .hitl-check.pass{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2)}
+    .hitl-actions{display:flex;gap:12px}
+    .btn-approve{flex:1;padding:14px;background:linear-gradient(135deg,var(--success),#16a34a);color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+    .btn-approve:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(34,197,94,.4)}
+    .btn-reject{flex:1;padding:14px;background:transparent;color:var(--error);border:1px solid rgba(239,68,68,.4);border-radius:var(--rs);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+    .btn-reject:hover{background:rgba(239,68,68,.08);border-color:var(--error)}
+    .hitl-timer{text-align:center;margin-top:14px;font-size:.78rem;color:var(--dim)}
+    .hitl-countdown{color:var(--warning);font-weight:700}
 
-    .validation-list{display:grid;gap:8px}
-    .validation-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm)}
-    .validation-icon{font-size:1rem;flex-shrink:0}
-    .validation-check{font-size:.85rem;font-weight:600;flex:1}
-    .validation-note{font-size:.78rem;color:var(--text-muted)}
-    .eligibility-banner{padding:16px 20px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:14px;margin-bottom:20px;font-weight:600}
-    .eligible-yes{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--success)}
-    .eligible-no{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--error)}
+    /* ==================== RESULTS ==================== */
+    .results-section{display:none}
+    .results-section.show{display:block;animation:fadeUp .5s ease}
+    .results-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+    .rc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+    .rc.full{grid-column:1/-1}
+    .rc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+    .rc-title{display:flex;align-items:center;gap:10px;font-size:.97rem;font-weight:700}
+    .rc-icon{width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px}
+    .badge{font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:14px}
+    .badge.ok {background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.3)}
+    .badge.warn{background:rgba(245,158,11,.15);color:var(--warning);border:1px solid rgba(245,158,11,.3)}
+    .badge.info{background:rgba(79,142,247,.15);color:var(--primary);border:1px solid rgba(79,142,247,.3)}
+
+    .field-grid{display:grid;gap:8px}
+    .fi{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:6px;border:1px solid transparent;transition:border-color .2s}
+    .fi:hover{border-color:var(--border)}
+    .fi-key{font-size:.76rem;color:var(--muted);font-weight:600;min-width:100px;flex-shrink:0;text-transform:uppercase;letter-spacing:.3px}
+    .fi-val{font-size:.86rem;font-weight:600;text-align:right;word-break:break-all}
+    .fi-conf{font-size:.68rem;padding:2px 7px;border-radius:9px;flex-shrink:0}
+    .conf-h{background:rgba(34,197,94,.15);color:var(--success)}
+    .conf-m{background:rgba(245,158,11,.15);color:var(--warning)}
+    .conf-l{background:rgba(239,68,68,.15);color:var(--error)}
+
+    .elig-banner{padding:14px 18px;border-radius:var(--rs);display:flex;align-items:center;gap:12px;margin-bottom:16px;font-weight:600}
+    .elig-yes{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);color:var(--success)}
+    .elig-no {background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:var(--error)}
+    .vlist{display:grid;gap:7px}
+    .vi{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:6px}
+    .vi-icon{font-size:.9rem;flex-shrink:0;margin-top:2px}
+    .vi-text{font-size:.83rem;font-weight:600;flex:1}
+    .vi-note{font-size:.76rem;color:var(--muted)}
 
     .mapping-table{width:100%;border-collapse:collapse}
-    .mapping-table th{text-align:left;font-size:.75rem;color:var(--text-muted);font-weight:600;letter-spacing:.5px;padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase}
-    .mapping-table td{padding:10px 12px;font-size:.85rem;border-bottom:1px solid rgba(45,58,82,.4)}
+    .mapping-table th{text-align:left;font-size:.72rem;color:var(--muted);font-weight:700;padding:7px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px}
+    .mapping-table td{padding:9px 10px;font-size:.83rem;border-bottom:1px solid rgba(45,58,82,.35)}
     .mapping-table tr:last-child td{border-bottom:none}
     .mapping-table tr:hover td{background:rgba(79,142,247,.03)}
-    .mapping-conf-bar{height:4px;border-radius:2px;background:var(--surface3);overflow:hidden;margin-top:4px}
-    .mapping-conf-fill{height:100%;border-radius:2px;background:var(--primary);transition:width .8s .2s ease}
+    .cbar{height:3px;border-radius:2px;background:var(--surface3);margin-top:4px}
+    .cbar-fill{height:100%;border-radius:2px;background:var(--primary);transition:width 1s .3s ease}
 
-    /* ===================== PDF SECTION ===================== */
-    .pdf-section{background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(124,92,191,.08));border:1px solid rgba(79,142,247,.3);border-radius:var(--radius);padding:32px;text-align:center;margin-top:8px}
-    .pdf-icon{font-size:3.5rem;margin-bottom:12px;display:block}
-    .pdf-title{font-size:1.3rem;font-weight:700;margin-bottom:8px}
-    .pdf-meta{font-size:.85rem;color:var(--text-muted);margin-bottom:24px}
-    .btn-download{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:14px 32px;border-radius:30px;font-size:1rem;font-weight:700;cursor:pointer;border:none;transition:all .3s;box-shadow:0 4px 20px rgba(79,142,247,.4);text-decoration:none}
-    .btn-download:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(79,142,247,.5)}
-    .btn-retry{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-muted);border:1px solid var(--border);padding:10px 20px;border-radius:20px;font-size:.85rem;cursor:pointer;transition:all .2s;margin-left:12px}
+    /* ==================== PLATFORM STATUS ==================== */
+    .platform-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+    .pl-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;display:flex;align-items:center;gap:12px}
+    .pl-icon{font-size:1.4rem;flex-shrink:0}
+    .pl-name{font-size:.82rem;font-weight:700;margin-bottom:2px}
+    .pl-detail{font-size:.72rem;color:var(--muted)}
+    .pl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .pl-dot.ok  {background:var(--success);box-shadow:0 0 6px rgba(34,197,94,.6)}
+    .pl-dot.off {background:var(--dim)}
+    .pl-dot.on  {background:var(--primary);box-shadow:0 0 6px rgba(79,142,247,.6)}
+
+    /* ==================== PDF SECTION ==================== */
+    .pdf-section{background:linear-gradient(135deg,rgba(79,142,247,.07),rgba(124,92,191,.07));border:1px solid rgba(79,142,247,.3);border-radius:var(--r);padding:28px;text-align:center}
+    .pdf-icon{font-size:3.2rem;margin-bottom:10px;display:block}
+    .pdf-title{font-size:1.2rem;font-weight:700;margin-bottom:6px}
+    .pdf-meta{font-size:.83rem;color:var(--muted);margin-bottom:22px;line-height:1.6}
+    .btn-dl{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:13px 28px;border-radius:28px;font-size:.97rem;font-weight:700;cursor:pointer;border:none;transition:all .3s;box-shadow:0 4px 20px rgba(79,142,247,.35);text-decoration:none}
+    .btn-dl:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(79,142,247,.5)}
+    .btn-retry{display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--muted);border:1px solid var(--border);padding:9px 18px;border-radius:20px;font-size:.82rem;cursor:pointer;transition:all .2s;margin-left:10px}
     .btn-retry:hover{border-color:var(--primary);color:var(--primary)}
 
-    /* ===================== FEATURES ===================== */
-    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
-    .feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:all .3s}
-    .feature-card:hover{border-color:var(--primary);transform:translateY(-4px);box-shadow:var(--shadow)}
-    .feature-icon{font-size:2rem;margin-bottom:14px}
-    .feature-title{font-size:1rem;font-weight:700;margin-bottom:8px}
-    .feature-desc{font-size:.85rem;color:var(--text-muted);line-height:1.6}
+    /* ==================== COMPLIANCE DASHBOARD ==================== */
+    .comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+    .case-study-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .case-btn{background:linear-gradient(135deg,var(--cyan),var(--primary));color:#041423;border:none;border-radius:16px;padding:8px 14px;font-size:.76rem;font-weight:800;cursor:pointer}
+    .case-note{font-size:.77rem;color:var(--muted)}
+    .comp-kpi{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
+    .comp-kpi-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.45px}
+    .comp-kpi-value{font-size:1.3rem;font-weight:800;margin-top:6px}
+    .comp-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .comp-panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
+    .comp-panel h4{font-size:.83rem;font-weight:700;margin-bottom:10px;color:var(--text)}
+    .comp-list{display:grid;gap:8px}
+    .comp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px}
+    .comp-item-name{font-size:.8rem;color:var(--text)}
+    .comp-item-val{font-size:.77rem;color:var(--cyan);font-weight:700}
+    .comp-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px}
+    .comp-table{width:100%;border-collapse:collapse;background:var(--surface2)}
+    .comp-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}
+    .comp-table td{font-size:.8rem;padding:9px 10px;border-bottom:1px solid rgba(45,58,82,.35)}
+    .comp-table tr:last-child td{border-bottom:none}
+    .risk-pill{font-size:.7rem;padding:3px 8px;border-radius:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+    .risk-low{background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.3)}
+    .risk-medium{background:rgba(245,158,11,.16);color:var(--warning);border:1px solid rgba(245,158,11,.35)}
+    .risk-high{background:rgba(239,68,68,.15);color:var(--error);border:1px solid rgba(239,68,68,.35)}
 
-    /* ===================== TECH STACK ===================== */
-    .tech-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
-    .tech-pill{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:.82rem;font-weight:500;transition:all .2s}
-    .tech-pill:hover{border-color:var(--primary);color:var(--primary)}
-    .tech-dot{width:8px;height:8px;border-radius:50%}
+    /* ==================== FEATURES ==================== */
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+    .fc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;transition:all .3s}
+    .fc:hover{border-color:var(--primary);transform:translateY(-4px);box-shadow:var(--shadow)}
+    .fc-icon{font-size:1.9rem;margin-bottom:12px}
+    .fc-title{font-size:.97rem;font-weight:700;margin-bottom:7px}
+    .fc-desc{font-size:.83rem;color:var(--muted);line-height:1.6}
 
-    /* ===================== LOADING DOTS ===================== */
+    /* ==================== TECH STACK ==================== */
+    .tech-pills{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+    .tech{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:7px 14px;font-size:.8rem;font-weight:500;transition:all .2s}
+    .tech:hover{border-color:var(--primary);color:var(--primary)}
+    .tdot{width:7px;height:7px;border-radius:50%}
+
+    /* ==================== DOTS LOADER ==================== */
     .dots{display:inline-flex;gap:4px}
-    .dots span{width:7px;height:7px;background:currentColor;border-radius:50%;animation:dot 1.4s ease-in-out infinite}
+    .dots span{width:6px;height:6px;background:currentColor;border-radius:50%;animation:dot 1.4s ease-in-out infinite}
     .dots span:nth-child(1){animation-delay:-.32s}
     .dots span:nth-child(2){animation-delay:-.16s}
 
-    /* ===================== ERROR ===================== */
-    .error-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:16px 20px;color:var(--error);display:none;margin-top:16px;font-size:.9rem}
-    .error-banner.show{display:block;animation:fadeUp .3s ease}
+    /* ==================== ERROR ==================== */
+    .err-banner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:var(--rs);padding:14px 18px;color:var(--error);display:none;margin-top:14px;font-size:.88rem}
+    .err-banner.show{display:block;animation:fadeUp .3s ease}
 
-    /* ===================== FOOTER ===================== */
-    footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--text-dim);font-size:.82rem}
-    footer a{color:var(--text-muted);text-decoration:none}
+    /* ==================== FOOTER ==================== */
+    footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center;color:var(--dim);font-size:.8rem}
+    footer a{color:var(--muted);text-decoration:none}
     footer a:hover{color:var(--primary)}
 
-    /* ===================== RESPONSIVE ===================== */
-    @media(max-width:768px){
+    /* ==================== RESPONSIVE ==================== */
+    @media(max-width:900px){
       .results-grid{grid-template-columns:1fr}
-      .form-row{grid-template-columns:1fr}
-      .pipeline{gap:4px}
-      .pipeline-arrow{display:none}
-      .pipeline-step{min-width:140px}
+      .form-row{grid-template-columns:1fr 1fr}
+      .pa{display:none}
+      .ps{min-width:140px}
     }
-    @media(max-width:480px){
+    @media(max-width:600px){
+      .form-row{grid-template-columns:1fr}
       .hero h1{font-size:1.8rem}
       .hero-stats{gap:24px}
+      .int-grid{grid-template-columns:1fr}
+      .hitl-actions{flex-direction:column}
+      .comp-panels{grid-template-columns:1fr}
     }
   </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 </head>
 <body>
 
 <!-- ==================== NAV ==================== -->
 <nav>
   <div class="nav-inner">
-    <div class="nav-logo">
-      <div class="nav-logo-icon">✈</div>
-      <span>FormPilot</span>
-      <span class="nav-badge">ENTERPRISE</span>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="nav-logo">
+        <div class="nav-logo-icon">✈</div>
+        <span>FormPilot</span>
+      </div>
+      <div class="nav-badges">
+        <span class="nbadge airia"><span class="nbadge-dot"></span>Airia Agent</span>
+        <span class="nbadge track2">Track 2 · Active Agents</span>
+        <span class="nbadge ent">Enterprise</span>
+      </div>
     </div>
-    <div class="nav-links">
-      <a href="#demo">Demo</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="#features">Features</a>
-      <button class="btn-demo-nav" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try Now →</button>
+    <div class="nav-right">
+      <div class="int-badges" id="navIntBadges">
+        <span class="int-badge off" id="badge-airia">🤖 Airia</span>
+        <span class="int-badge off" id="badge-slack">💬 Slack</span>
+        <span class="int-badge off" id="badge-sp">📁 SharePoint</span>
+      </div>
+      <button class="btn-demo-nav" onclick="scrollToDemo()">Try Demo →</button>
     </div>
   </div>
 </nav>
 
 <!-- ==================== HERO ==================== -->
 <section class="hero">
-  <div style="animation:fadeUp .6s ease both">
-    <div class="hero-eyebrow"><span></span>Multi-Agent AI System · Hackathon 2026</div>
-    <h1>Fill Government Forms<br/><span class="highlight">10× Faster with AI</span></h1>
-    <p>Upload your Aadhaar, Passport, or PAN card. Our 4-agent AI pipeline extracts your data, validates eligibility, maps fields, and generates a ready-to-submit PDF — in seconds.</p>
+  <div class="fade-up">
+    <div class="hero-eyebrow"><span></span>Airia AI Agents Hackathon 2026 · Track 2: Active Agents</div>
+    <h1>Enterprise Form Automation<br/><span class="hl">Powered by Airia + Gemini</span></h1>
+    <p>Upload an ID, vehicle RC, property deed, or GST certificate. FormPilot's 5-step Airia pipeline extracts entities, validates regulation compliance with HITL, maps form fields, generates a PDF, then notifies via Slack and archives to SharePoint.</p>
     <div class="hero-cta">
-      <button class="btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">🚀 Try Live Demo</button>
-      <button class="btn-secondary" onclick="loadDemoData()">⚡ Load Demo Data</button>
+      <button class="btn-pri" onclick="scrollToDemo()">🚀 Run Live Demo</button>
+      <button class="btn-sec" onclick="loadDemoData()">⚡ Load Demo Data</button>
     </div>
   </div>
   <div class="hero-stats fade-up" style="animation-delay:.3s">
-    <div class="stat"><div class="stat-value">4</div><div class="stat-label">AI Agents</div></div>
-    <div class="stat"><div class="stat-value">95%+</div><div class="stat-label">OCR Accuracy</div></div>
-    <div class="stat"><div class="stat-value">&lt;3s</div><div class="stat-label">End-to-End</div></div>
-    <div class="stat"><div class="stat-value">0</div><div class="stat-label">Manual Entry</div></div>
+    <div style="text-align:center"><div class="stat-v">5</div><div class="stat-l">Pipeline Steps</div></div>
+    <div style="text-align:center"><div class="stat-v">3</div><div class="stat-l">Integrations</div></div>
+    <div style="text-align:center"><div class="stat-v">95%+</div><div class="stat-l">OCR Accuracy</div></div>
+    <div style="text-align:center"><div class="stat-v">&lt; 3s</div><div class="stat-l">End-to-End</div></div>
   </div>
 </section>
+
+<!-- ==================== AIRIA CALLOUT ==================== -->
+<div class="container" style="padding:0 24px">
+  <div class="airia-callout fade-up">
+    <div class="airia-callout-icon">🤖</div>
+    <div>
+      <h3>Powered by Airia AI Platform — Track 2: Active Agents</h3>
+      <p>FormPilot uses <strong>Airia as its orchestration backbone</strong>. When AIRIA_API_KEY is configured, all 5 pipeline steps are dispatched through Airia's platform. Each agent is exposed as an Airia-callable HTTP tool, the pipeline is published to Airia Community, and HITL checkpoints are natively supported.</p>
+      <div class="airia-steps">
+        <span class="airia-step">🔍 Document Analyzer</span>
+        <span class="airia-step">✅ Rules Validator + HITL</span>
+        <span class="airia-step">🗺️ Field Mapper</span>
+        <span class="airia-step">📄 PDF Generator</span>
+        <span class="airia-step">📢 Slack + SharePoint</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ==================== HOW IT WORKS ==================== -->
 <section id="how-it-works" class="section">
   <div class="container">
-    <div class="section-title fade-up">
-      <h2>The 4-Agent Pipeline</h2>
-      <p>Orchestrated AI agents working together to automate your entire form journey</p>
+    <div class="sec-title fade-up">
+      <h2>The 5-Step Airia Pipeline</h2>
+      <p>Agents orchestrated by Airia — cross-system, autonomous, with human-in-the-loop governance</p>
     </div>
-    <div class="pipeline" id="pipeline">
-      <div class="pipeline-step" id="step1">
-        <div class="step-icon">🔍</div>
-        <div class="step-num">AGENT 1</div>
-        <div class="step-name">Document Analyzer</div>
-        <div class="step-desc">Gemini Vision extracts identity data from Aadhaar / Passport / PAN</div>
-        <div class="step-status" id="status1"></div>
+    <div class="pipeline" id="pipeline-viz">
+      <div class="ps" id="step1">
+        <div class="ps-icon">🔍</div>
+        <div class="ps-num">AGENT 1</div>
+        <div class="ps-name">Document Analyzer</div>
+        <div class="ps-desc">Gemini 2.0 Flash Vision extracts identity from Aadhaar / Passport / PAN</div>
+        <div class="ps-st" id="st1"></div>
       </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step" id="step2">
-        <div class="step-icon">✅</div>
-        <div class="step-num">AGENT 2</div>
-        <div class="step-name">Rules Validator</div>
-        <div class="step-desc">Checks eligibility against government rules for 4 countries</div>
-        <div class="step-status" id="status2"></div>
+      <div class="pa">→</div>
+      <div class="ps" id="step2">
+        <div class="ps-icon">✅</div>
+        <div class="ps-num">AGENT 2</div>
+        <div class="ps-name">Rules Validator</div>
+        <div class="ps-desc">Runs deterministic compliance checks (UIDAI, GST, state rules) + HITL checkpoint</div>
+        <div class="ps-st" id="st2"></div>
       </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step" id="step3">
-        <div class="step-icon">🗺</div>
-        <div class="step-num">AGENT 3</div>
-        <div class="step-name">Field Mapper</div>
-        <div class="step-desc">Semantic AI maps extracted data to any form field intelligently</div>
-        <div class="step-status" id="status3"></div>
+      <div class="pa">→</div>
+      <div class="ps" id="step3">
+        <div class="ps-icon">🗺️</div>
+        <div class="ps-num">AGENT 3</div>
+        <div class="ps-name">Field Mapper</div>
+        <div class="ps-desc">Semantic AI + fuzzy match maps fields to any target form</div>
+        <div class="ps-st" id="st3"></div>
       </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step" id="step4">
-        <div class="step-icon">📄</div>
-        <div class="step-num">AGENT 4</div>
-        <div class="step-name">PDF Generator</div>
-        <div class="step-desc">Generates professional, submission-ready government PDF form</div>
-        <div class="step-status" id="status4"></div>
+      <div class="pa">→</div>
+      <div class="ps" id="step4">
+        <div class="ps-icon">📄</div>
+        <div class="ps-num">AGENT 4</div>
+        <div class="ps-name">PDF Generator</div>
+        <div class="ps-desc">ReportLab generates professional government-ready PDF</div>
+        <div class="ps-st" id="st4"></div>
+      </div>
+      <div class="pa">→</div>
+      <div class="ps" id="step5">
+        <div class="ps-icon">📢</div>
+        <div class="ps-num">STEP 5</div>
+        <div class="ps-name">Notification Dispatcher</div>
+        <div class="ps-desc">Sends Slack alert + uploads PDF to SharePoint via Graph API</div>
+        <div class="ps-st" id="st5"></div>
       </div>
     </div>
   </div>
@@ -327,639 +466,942 @@
 <!-- ==================== DEMO ==================== -->
 <section id="demo" class="section" style="padding-top:20px">
   <div class="container">
-    <div class="section-title fade-up">
+    <div class="sec-title fade-up">
       <h2>Live Demo</h2>
-      <p>Upload a real identity document or use our demo data to see FormPilot in action</p>
+      <p>Upload a real ID document or use demo data to run the Airia pipeline</p>
     </div>
 
     <!-- Upload Card -->
-    <div class="upload-section fade-up">
+    <div class="card fade-up">
+      <div class="card-hd">
+        <div class="card-hd-l"><div class="card-hd-icon">📁</div>Identity Document</div>
+      </div>
       <div class="upload-zone" id="uploadZone">
-        <input type="file" class="upload-input" id="fileInput" accept="image/*,.pdf" />
-        <span class="upload-icon float">📁</span>
-        <div class="upload-title">Drop your document here</div>
-        <div class="upload-subtitle">or click to browse</div>
-        <div class="upload-formats">
-          <span class="format-badge">Aadhaar Card</span>
-          <span class="format-badge">Passport</span>
-          <span class="format-badge">PAN Card</span>
-          <span class="format-badge">PNG / JPG / PDF</span>
+        <input type="file" class="upinput" id="fileInput" accept="image/*,.pdf"/>
+        <span class="uz-icon float">📄</span>
+        <div class="uz-title">Drop your document here</div>
+        <div class="uz-sub">or click to browse — any identity document</div>
+        <div class="fmt-badges">
+          <span class="fmt">Aadhaar Card</span>
+          <span class="fmt">Passport</span>
+          <span class="fmt">PAN Card</span>
+          <span class="fmt">Driving Licence</span>
+          <span class="fmt">PNG / JPG / PDF</span>
         </div>
       </div>
       <div class="upload-preview" id="uploadPreview">
-        <img id="previewImg" src="" alt="Preview" class="preview-img" />
-        <div class="preview-info">
-          <div class="preview-name" id="previewName"></div>
-          <div class="preview-size" id="previewSize"></div>
+        <img id="previewImg" src="" alt="Preview" class="prev-img"/>
+        <div class="prev-info">
+          <div class="prev-name" id="prevName">—</div>
+          <div class="prev-sz" id="prevSize">—</div>
         </div>
-        <button class="preview-remove" onclick="removeFile()" title="Remove">✕</button>
+        <button class="btn-rem" onclick="removeFile()">✕</button>
       </div>
 
+      <!-- Form config -->
       <div class="form-row">
-        <div class="form-group">
+        <div class="fg">
           <label>Document Type</label>
           <select id="docType">
-            <option value="aadhaar">Aadhaar Card (India)</option>
-            <option value="passport">Passport</option>
-            <option value="pan">PAN Card (India)</option>
+            <option value="aadhaar">🇮🇳 Aadhaar Card</option>
+            <option value="passport" selected>🌍 Passport</option>
+            <option value="pan">🇮🇳 PAN Card</option>
+            <option value="driving_license">🚗 Driving Licence</option>
+            <option value="vehicle_registration">🚘 Vehicle Registration (RC)</option>
+            <option value="property_deed">🏠 Property Deed</option>
+            <option value="gst_registration">🏢 GST Registration</option>
+            <option value="generic">📄 Generic ID</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="fg">
+          <label>Country / Rules</label>
+          <select id="country">
+            <option value="IN" selected>🇮🇳 India</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="UK">🇬🇧 United Kingdom</option>
+            <option value="CA">🇨🇦 Canada</option>
+          </select>
+        </div>
+        <div class="fg">
           <label>Application Type</label>
           <select id="appType">
             <option value="passport">Passport Application</option>
             <option value="visa">Visa Application</option>
-            <option value="driver_license">Driver's License</option>
+            <option value="driver_license">Driver's Licence</option>
+            <option value="vehicle_registration">Vehicle Registration</option>
+            <option value="property_registration">Property Registration</option>
+            <option value="gst_registration">GST Business Registration</option>
             <option value="voter_id">Voter ID</option>
+            <option value="hr_onboarding">HR Onboarding (I-9)</option>
+            <option value="compliance">Compliance Form</option>
+            <option value="generic">Generic Form</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label>Country</label>
-          <select id="country">
-            <option value="IN">India 🇮🇳</option>
-            <option value="US">United States 🇺🇸</option>
-            <option value="UK">United Kingdom 🇬🇧</option>
-            <option value="CA">Canada 🇨🇦</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Form Title</label>
-          <input type="text" id="formTitle" value="Government Application Form" placeholder="e.g. DS-160 Visa Form" />
         </div>
       </div>
-
-      <div class="error-banner" id="errorBanner"></div>
-
-      <button class="process-btn" id="processBtn" onclick="processDocument()">
-        🤖 Process with AI Agents (Requires Gemini API Key)
-      </button>
-      <button class="process-btn" id="demoBtn" onclick="runServerDemo()" style="margin-top:10px;background:linear-gradient(135deg,#22c55e,#16a34a)">
-        ⚡ Run Instant Demo — No API Key Needed
-      </button>
     </div>
 
+    <!-- Platform Integrations Panel -->
+    <div class="integrations-panel fade-up">
+      <div class="int-panel-hd">
+        <span style="font-size:1.3rem">🔌</span>
+        <h3>Platform Integrations</h3>
+        <span class="lbl">Airia Multi-System</span>
+      </div>
+      <div class="int-grid">
+        <div class="int-toggle" id="toggle-airia" onclick="toggleInt('airia')">
+          <div class="int-toggle-icon">🤖</div>
+          <div class="int-toggle-info">
+            <div class="int-toggle-name">Airia Orchestration</div>
+            <div class="int-toggle-status" id="airia-status-txt">Route pipeline via Airia</div>
+          </div>
+          <div class="toggle-sw" id="sw-airia"></div>
+        </div>
+        <div class="int-toggle active" id="toggle-slack" onclick="toggleInt('slack')">
+          <div class="int-toggle-icon">💬</div>
+          <div class="int-toggle-info">
+            <div class="int-toggle-name">Slack Notification</div>
+            <div class="int-toggle-status" id="slack-status-txt">Notify on completion &amp; HITL</div>
+          </div>
+          <div class="toggle-sw on" id="sw-slack"></div>
+        </div>
+        <div class="int-toggle active" id="toggle-sp" onclick="toggleInt('sp')">
+          <div class="int-toggle-icon">📁</div>
+          <div class="int-toggle-info">
+            <div class="int-toggle-name">SharePoint Upload</div>
+            <div class="int-toggle-status" id="sp-status-txt">Upload PDF via Graph API</div>
+          </div>
+          <div class="toggle-sw on" id="sw-sp"></div>
+        </div>
+        <div class="int-toggle active" id="toggle-hitl" onclick="toggleInt('hitl')">
+          <div class="int-toggle-icon">👤</div>
+          <div class="int-toggle-info">
+            <div class="int-toggle-name">Human-in-the-Loop</div>
+            <div class="int-toggle-status" id="hitl-status-txt">Pause for review if ineligible</div>
+          </div>
+          <div class="toggle-sw on" id="sw-hitl"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run Button -->
+    <button class="run-btn" id="runBtn" onclick="runWorkflow()">
+      🚀 Run Airia Pipeline
+    </button>
+    <div class="err-banner" id="errBanner"></div>
+
     <!-- Progress Section -->
-    <div class="progress-section" id="progressSection">
-      <div class="progress-header">
-        <div class="progress-title">⚙️ Processing Pipeline</div>
-        <div class="progress-pct" id="progressPct">0%</div>
+    <div class="prog-section" id="progSection">
+      <div class="prog-hd">
+        <div class="prog-title">
+          <span>🤖</span>
+          <span id="progTitle">Running Airia Pipeline…</span>
+          <div class="dots"><span></span><span></span><span></span></div>
+        </div>
+        <span class="prog-pct" id="progPct">0%</span>
       </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar" id="progressBar" style="width:0%"></div>
-      </div>
-      <div class="progress-log" id="progressLog"></div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-log" id="progLog"></div>
     </div>
 
     <!-- Results Section -->
     <div class="results-section" id="resultsSection">
+      <!-- Platform dispatch status -->
+      <div class="platform-status" id="platformStatus"></div>
+
       <div class="results-grid">
-        <!-- Extracted Profile -->
-        <div class="result-card">
-          <div class="card-header">
-            <div class="card-title"><div class="icon">👤</div> Extracted Identity</div>
-            <span class="card-badge badge-success" id="ocrConfBadge">–</span>
+        <!-- Identity Profile -->
+        <div class="rc">
+          <div class="rc-hd">
+            <div class="rc-title"><div class="rc-icon">🔍</div>Extracted Identity</div>
+            <span class="badge ok" id="confBadge">95%</span>
           </div>
-          <div class="field-grid" id="profileFields"></div>
+          <div class="field-grid" id="profileGrid"></div>
         </div>
 
         <!-- Eligibility -->
-        <div class="result-card">
-          <div class="card-header">
-            <div class="card-title"><div class="icon">⚖️</div> Eligibility Check</div>
-            <span class="card-badge" id="eligBadge">–</span>
+        <div class="rc">
+          <div class="rc-hd">
+            <div class="rc-title"><div class="rc-icon">✅</div>Eligibility Validation</div>
+            <span class="badge ok" id="eligBadge">Eligible</span>
           </div>
-          <div id="eligibilityContent"></div>
+          <div id="eligBody"></div>
         </div>
 
         <!-- Field Mappings -->
-        <div class="result-card full">
-          <div class="card-header">
-            <div class="card-title"><div class="icon">🗺</div> Form Field Mappings</div>
-            <span class="card-badge badge-info" id="mappingsBadge">–</span>
+        <div class="rc full">
+          <div class="rc-hd">
+            <div class="rc-title"><div class="rc-icon">🗺️</div>Form Field Mappings</div>
+            <span class="badge info" id="mappingBadge">—</span>
           </div>
           <table class="mapping-table">
-            <thead>
-              <tr>
-                <th>Form Field</th>
-                <th>Source Field</th>
-                <th>Mapped Value</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody id="mappingsTable"></tbody>
+            <thead><tr><th>Form Field</th><th>Source</th><th>Value</th><th>Confidence</th></tr></thead>
+            <tbody id="mappingBody"></tbody>
           </table>
         </div>
-      </div>
 
-      <!-- PDF Download -->
-      <div class="pdf-section" id="pdfSection" style="display:none">
-        <span class="pdf-icon float">📄</span>
-        <div class="pdf-title">Your form is ready!</div>
-        <div class="pdf-meta" id="pdfMeta">Filled and formatted — ready to submit</div>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-          <a id="downloadBtn" class="btn-download" href="#" download>⬇ Download PDF</a>
-          <button class="btn-retry" onclick="resetUI()">↺ Process Another</button>
+        <!-- PDF Download -->
+        <div class="rc full">
+          <div class="pdf-section">
+            <span class="pdf-icon float">📄</span>
+            <div class="pdf-title">Your form is ready!</div>
+            <div class="pdf-meta" id="pdfMeta">—</div>
+            <div id="pdfActions"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ==================== FEATURES ==================== -->
-<section id="features" class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+<!-- ==================== COMPLIANCE DASHBOARD ==================== -->
+<section id="compliance" class="section" style="padding-top:18px">
   <div class="container">
-    <div class="section-title fade-up">
-      <h2>Why FormPilot Wins</h2>
-      <p>Every feature built to eliminate the pain of government form filling</p>
+    <div class="sec-title fade-up">
+      <h2>Compliance Command Center</h2>
+      <p>Live audit intelligence for violations, risk trends, and document-type performance</p>
     </div>
+    <div class="card fade-up">
+      <div class="card-hd">
+        <div class="card-hd-l"><div class="card-hd-icon">📊</div>Regulatory Metrics Dashboard</div>
+      </div>
+      <div class="case-study-row">
+        <button class="case-btn" onclick="runCaseStudy()">Run 100-Doc Case Study</button>
+        <span class="case-note" id="caseStudyNote">Benchmarks deterministic compliance engine for judge demos.</span>
+      </div>
+      <div class="comp-grid" id="complianceKpis"></div>
+      <div class="comp-panels">
+        <div class="comp-panel">
+          <h4>Top Violations</h4>
+          <div class="comp-list" id="complianceViolations"></div>
+        </div>
+        <div class="comp-panel">
+          <h4>Document Performance</h4>
+          <div class="comp-list" id="complianceDocs"></div>
+        </div>
+      </div>
+      <div class="comp-table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Workflow</th>
+              <th>Document</th>
+              <th>App</th>
+              <th>Score</th>
+              <th>Risk</th>
+              <th>Violations</th>
+            </tr>
+          </thead>
+          <tbody id="complianceHistory"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== HITL MODAL ==================== -->
+<div class="hitl-overlay" id="hitlOverlay">
+  <div class="hitl-modal">
+    <div class="hitl-header">
+      <span class="icon">⚠️</span>
+      <div>
+        <h2>Human Review Required</h2>
+        <p>Eligibility check raised concerns — please review and decide</p>
+      </div>
+    </div>
+    <div class="hitl-body">
+      <div style="font-size:.88rem;font-weight:600;margin-bottom:8px">Validation Issues Found:</div>
+      <div class="hitl-checks" id="hitlChecks"></div>
+    </div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:16px;padding:12px 14px;background:var(--surface2);border-radius:6px" id="hitlNotes"></div>
+    <div class="hitl-actions">
+      <button class="btn-approve" onclick="hitlDecide(true)">✅ Approve &amp; Continue</button>
+      <button class="btn-reject" onclick="hitlDecide(false)">❌ Reject Application</button>
+    </div>
+    <div class="hitl-timer">Auto-rejects in <span class="hitl-countdown" id="hitlCountdown">5:00</span></div>
+  </div>
+</div>
+
+<!-- ==================== FEATURES ==================== -->
+<section id="features" class="section">
+  <div class="container">
+    <div class="sec-title fade-up"><h2>Enterprise-Grade Capabilities</h2></div>
     <div class="features-grid">
-      <div class="feature-card fade-up">
-        <div class="feature-icon">🧠</div>
-        <div class="feature-title">Multi-Model AI Reasoning</div>
-        <div class="feature-desc">Gemini 1.5 Flash handles vision extraction and semantic field mapping with near-human accuracy — even on blurry or angled documents.</div>
+      <div class="fc fade-up">
+        <div class="fc-icon">🤖</div>
+        <div class="fc-title">Airia-Orchestrated Pipeline</div>
+        <div class="fc-desc">Every agent step is registered in Airia Community as a callable tool. The pipeline is published and can be invoked from any Airia workspace or workflow.</div>
       </div>
-      <div class="feature-card fade-up" style="animation-delay:.1s">
-        <div class="feature-icon">⚡</div>
-        <div class="feature-title">Sub-3-Second Pipeline</div>
-        <div class="feature-desc">4 agents execute in orchestrated sequence, completing the full extract → validate → map → generate PDF pipeline in under 3 seconds.</div>
+      <div class="fc fade-up" style="animation-delay:.07s">
+        <div class="fc-icon">👤</div>
+        <div class="fc-title">Human-in-the-Loop (HITL)</div>
+        <div class="fc-desc">When eligibility fails, the pipeline pauses. A Slack approval card with Approve/Reject buttons is sent. The workflow resumes only after human sign-off.</div>
       </div>
-      <div class="feature-card fade-up" style="animation-delay:.2s">
-        <div class="feature-icon">🛡️</div>
-        <div class="feature-title">Confidence Scoring</div>
-        <div class="feature-desc">Every extracted field carries a 0–1 confidence score. Low-confidence fields are flagged so users can review before submission.</div>
+      <div class="fc fade-up" style="animation-delay:.14s">
+        <div class="fc-icon">💬</div>
+        <div class="fc-title">Slack Block Kit Notifications</div>
+        <div class="fc-desc">Rich Slack notifications on completion with applicant details, confidence scores, and PDF metadata. HITL requests include Approve/Reject action buttons.</div>
       </div>
-      <div class="feature-card fade-up" style="animation-delay:.3s">
-        <div class="feature-icon">🌍</div>
-        <div class="feature-title">Multi-Country Rules Engine</div>
-        <div class="feature-desc">Eligibility rules for India, US, UK, and Canada. Checks age, residency, document validity, and country-specific requirements automatically.</div>
+      <div class="fc fade-up" style="animation-delay:.21s">
+        <div class="fc-icon">📁</div>
+        <div class="fc-title">SharePoint Archival</div>
+        <div class="fc-desc">Generated PDFs are automatically uploaded to a SharePoint document library via Microsoft Graph API, organized by date, with applicant metadata.</div>
       </div>
-      <div class="feature-card fade-up" style="animation-delay:.4s">
-        <div class="feature-icon">📑</div>
-        <div class="feature-title">Professional PDF Output</div>
-        <div class="feature-desc">ReportLab-powered PDF generation produces structured, government-quality documents with sections, confidence metadata, and watermarks.</div>
+      <div class="fc fade-up" style="animation-delay:.28s">
+        <div class="fc-icon">🔍</div>
+        <div class="fc-title">Gemini 2.0 Flash Vision</div>
+        <div class="fc-desc">95%+ OCR accuracy on Aadhaar, Passport, PAN, and Driving Licence using Google's latest multimodal model with per-field confidence scoring.</div>
       </div>
-      <div class="feature-card fade-up" style="animation-delay:.5s">
-        <div class="feature-icon">🔌</div>
-        <div class="feature-title">REST API + Zero Lock-in</div>
-        <div class="feature-desc">Clean FastAPI backend with OpenAPI docs. Integrates into any system. Works with Aadhaar, Passport, PAN out of the box.</div>
+      <div class="fc fade-up" style="animation-delay:.35s">
+        <div class="fc-icon">🌍</div>
+        <div class="fc-title">Compliance Rule Engine</div>
+        <div class="fc-desc">Deterministic policy checks for UIDAI Aadhaar, GSTIN format, Indian state-pincode consistency, and cross-country eligibility workflows.</div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ==================== TECH STACK ==================== -->
-<section class="section">
+<section class="section" style="padding-top:20px">
   <div class="container">
-    <div class="section-title fade-up">
-      <h2>Built With</h2>
-    </div>
-    <div class="tech-grid fade-up">
-      <div class="tech-pill"><div class="tech-dot" style="background:#4f8ef7"></div>Google Gemini 1.5 Flash</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#009688"></div>FastAPI + Python 3.12</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#ff6b35"></div>ReportLab PDF Engine</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#9c27b0"></div>FuzzyWuzzy Semantic Match</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#4caf50"></div>Pydantic v2 Validation</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#2196f3"></div>Async Workflow Orchestration</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#ff9800"></div>Base64 Vision Encoding</div>
-      <div class="tech-pill"><div class="tech-dot" style="background:#e91e63"></div>Multi-Agent Architecture</div>
+    <div class="sec-title"><h2>Technology Stack</h2></div>
+    <div class="tech-pills" style="justify-content:center">
+      <span class="tech"><span class="tdot" style="background:#22d3ee"></span>Airia AI Platform</span>
+      <span class="tech"><span class="tdot" style="background:#4285f4"></span>Gemini 2.0 Flash</span>
+      <span class="tech"><span class="tdot" style="background:#4a154b"></span>Slack Block Kit</span>
+      <span class="tech"><span class="tdot" style="background:#0078d4"></span>SharePoint / Graph API</span>
+      <span class="tech"><span class="tdot" style="background:#009688"></span>FastAPI</span>
+      <span class="tech"><span class="tdot" style="background:#3776ab"></span>Python 3.12</span>
+      <span class="tech"><span class="tdot" style="background:#e6312d"></span>ReportLab PDF</span>
+      <span class="tech"><span class="tdot" style="background:#f59e0b"></span>FuzzyWuzzy NLP</span>
+      <span class="tech"><span class="tdot" style="background:#22c55e"></span>Pydantic v2</span>
     </div>
   </div>
 </section>
 
 <!-- ==================== FOOTER ==================== -->
 <footer>
-  <div class="container">
-    <p>FormPilot Enterprise · Built for <strong>Airia Hackathon 2026</strong> · Multi-Agent AI Track</p>
-    <p style="margin-top:8px"><a href="/docs" target="_blank">API Docs</a> · <a href="https://github.com/pranjal2004838/Formpilot" target="_blank">GitHub</a></p>
-  </div>
+  <p>FormPilot Enterprise — Airia AI Agents Hackathon 2026 · Track 2: Active Agents</p>
+  <p style="margin-top:8px">
+    <a href="/docs">API Docs</a> ·
+    <a href="/api/airia/pipeline">Pipeline Definition</a> ·
+    <a href="/api/airia/tools">Tool Manifest</a> ·
+    <a href="/api/integrations/status">Integration Status</a>
+  </p>
 </footer>
 
-<!-- ==================== SCRIPT ==================== -->
+<!-- ==================== JAVASCRIPT ==================== -->
 <script>
-  const API = '';  // Same origin — FastAPI serves both frontend and API
+// ============================================================
+// State
+// ============================================================
+let uploadedFile   = null;
+let uploadedBase64 = null;
+let pollInterval   = null;
+let currentWfId    = null;
+let hitlTimer      = null;
+let hitlSeconds    = 300;
+let integrationCfg = {airia:false, slack:true, sp:true, hitl:true};
 
-  let uploadedFile = null;
-  let currentResult = null;
+// ============================================================
+// On Load: fetch integration status
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  fetchIntegrationStatus();
+  setupUpload();
+  loadComplianceDashboard();
+});
 
-  // ──────── FILE UPLOAD ────────
-  const zone   = document.getElementById('uploadZone');
-  const input  = document.getElementById('fileInput');
-  const preview= document.getElementById('uploadPreview');
+async function fetchIntegrationStatus() {
+  try {
+    const res = await fetch('/api/integrations/status');
+    if (!res.ok) return;
+    const data = await res.json();
 
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-  input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
+    setBadge('badge-airia', data.airia?.configured, '🤖 Airia');
+    setBadge('badge-slack', data.slack?.configured, '💬 Slack');
+    setBadge('badge-sp',    data.sharepoint?.configured, '📁 SharePoint');
 
-  function handleFile(file) {
-    uploadedFile = file;
-    zone.classList.add('has-file');
-    document.getElementById('previewName').textContent = file.name;
-    document.getElementById('previewSize').textContent = (file.size/1024).toFixed(1) + ' KB · ' + file.type;
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = e => { document.getElementById('previewImg').src = e.target.result; };
-      reader.readAsDataURL(file);
-    } else {
-      document.getElementById('previewImg').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📄</text></svg>';
+    if (data.airia?.configured) {
+      document.getElementById('airia-status-txt').textContent = 'Connected — pipeline active';
+      integrationCfg.airia = true;
+      setToggle('airia', true);
     }
-    preview.classList.add('show');
-    hideError();
+    if (!data.slack?.configured) {
+      document.getElementById('slack-status-txt').textContent = 'Set SLACK_WEBHOOK_URL to enable';
+    }
+    if (!data.sharepoint?.configured) {
+      document.getElementById('sp-status-txt').textContent = 'Set SHAREPOINT_* env vars to enable';
+    }
+  } catch(e) {}
+}
+
+function setBadge(id, ok, label) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = label;
+  el.className = 'int-badge ' + (ok ? 'on' : 'off');
+}
+
+// ============================================================
+// Toggle integrations
+// ============================================================
+function toggleInt(key) {
+  integrationCfg[key] = !integrationCfg[key];
+  setToggle(key, integrationCfg[key]);
+}
+
+function setToggle(key, on) {
+  const sw  = document.getElementById('sw-' + key);
+  const tog = document.getElementById('toggle-' + key);
+  if (!sw || !tog) return;
+  sw.className  = 'toggle-sw ' + (on ? 'on' : '');
+  tog.className = 'int-toggle ' + (on ? 'active' : '');
+}
+
+// ============================================================
+// Upload
+// ============================================================
+function setupUpload() {
+  const zone  = document.getElementById('uploadZone');
+  const input = document.getElementById('fileInput');
+
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('drag'));
+  zone.addEventListener('drop',      e  => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+  input.addEventListener('change',   ()  => handleFile(input.files[0]));
+}
+
+function handleFile(file) {
+  if (!file) return;
+  uploadedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    uploadedBase64 = e.target.result.split(',')[1];
+    const zone = document.getElementById('uploadZone');
+    zone.classList.add('ready');
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('prevName').textContent = file.name;
+    document.getElementById('prevSize').textContent = (file.size/1024).toFixed(1) + ' KB';
+    document.getElementById('uploadPreview').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeFile() {
+  uploadedFile = uploadedBase64 = null;
+  document.getElementById('uploadZone').classList.remove('ready');
+  document.getElementById('uploadPreview').classList.remove('show');
+  document.getElementById('fileInput').value = '';
+}
+
+// ============================================================
+// Demo data
+// ============================================================
+function loadDemoData() {
+  document.getElementById('docType').value = 'pan';
+  document.getElementById('country').value  = 'IN';
+  document.getElementById('appType').value  = 'passport';
+  scrollToDemo();
+}
+
+function scrollToDemo() {
+  document.getElementById('demo').scrollIntoView({behavior:'smooth'});
+}
+
+// ============================================================
+// Run workflow
+// ============================================================
+async function runWorkflow() {
+  clearError();
+  const btn = document.getElementById('runBtn');
+
+  // If no real document, run demo
+  if (!uploadedBase64) {
+    btn.disabled = true;
+    btn.textContent = '⚡ Running Demo Pipeline…';
+    await runDemo();
+    btn.disabled = false;
+    btn.textContent = '🚀 Run Airia Pipeline';
+    return;
   }
 
-  function removeFile() {
-    uploadedFile = null;
-    zone.classList.remove('has-file');
-    preview.classList.remove('show');
-    input.value = '';
-  }
+  btn.disabled = true;
+  btn.textContent = '🤖 Starting Airia Pipeline…';
 
-  // ──────── DEMO DATA ────────
-  function loadDemoData() {
-    // Create a simple demo Aadhaar-like image programmatically
-    const canvas = document.createElement('canvas');
-    canvas.width = 640; canvas.height = 400;
-    const ctx = canvas.getContext('2d');
+  const payload = {
+    document_image:    uploadedBase64,
+    document_type:     document.getElementById('docType').value,
+    country:           document.getElementById('country').value,
+    app_type:          document.getElementById('appType').value,
+    form_title:        document.getElementById('appType').selectedOptions[0].text,
+    notify_slack:      integrationCfg.slack,
+    upload_sharepoint: integrationCfg.sp,
+    hitl_enabled:      integrationCfg.hitl,
+  };
 
-    // Background
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,640,400);
+  try {
+    const res  = await fetch('/api/workflows/start', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Failed to start workflow'); btn.disabled=false; btn.textContent='🚀 Run Airia Pipeline'; return; }
 
-    // Header bar
-    const grad = ctx.createLinearGradient(0,0,640,0);
-    grad.addColorStop(0,'#1a237e'); grad.addColorStop(1,'#283593');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,640,60);
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial';
-    ctx.fillText('UNIQUE IDENTIFICATION AUTHORITY OF INDIA', 120, 28);
-    ctx.font = '12px Arial';
-    ctx.fillText('Government of India', 250, 50);
-
-    // Photo placeholder
-    ctx.fillStyle = '#e0e0e0'; ctx.fillRect(20, 80, 100, 130);
-    ctx.fillStyle = '#9e9e9e'; ctx.font = '12px Arial'; ctx.fillText('Photo', 52, 150);
-
-    // Data fields
-    ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Arial';
-    ctx.fillText('PRANJAL KUMAR SINGH', 140, 105);
-    ctx.font = '13px Arial'; ctx.fillStyle = '#333333';
-    ctx.fillText('Date of Birth: 15/05/1998', 140, 130);
-    ctx.fillText('Gender: Male', 140, 152);
-    ctx.fillText('S/O: RAJESH KUMAR SINGH', 140, 174);
-    ctx.fillStyle = '#000000'; ctx.font = '12px Arial';
-    ctx.fillText('123, MG Road, Sector 5', 140, 196);
-    ctx.fillText('Bangalore, Karnataka - 560001', 140, 215);
-
-    // Aadhaar number
-    ctx.fillStyle = '#1a237e'; ctx.font = 'bold 20px Arial';
-    ctx.fillText('1234  5678  9012', 160, 270);
-    ctx.fillStyle = '#4a4a4a'; ctx.font = '11px Arial';
-    ctx.fillText('Aadhaar Number', 200, 290);
-
-    // Bottom bar
-    ctx.fillStyle = '#ff8f00'; ctx.fillRect(0, 340, 640, 60);
-    ctx.fillStyle = '#1a237e'; ctx.font = 'bold 11px Arial';
-    ctx.fillText('Government of India | mAadhaar App | uidai.gov.in', 160, 375);
-
-    canvas.toBlob(blob => {
-      const file = new File([blob], 'sample_aadhaar.png', { type: 'image/png' });
-      handleFile(file);
-      document.getElementById('docType').value = 'aadhaar';
-      document.getElementById('appType').value = 'passport';
-      document.getElementById('country').value = 'IN';
-      document.getElementById('formTitle').value = 'Passport Application Form';
-    }, 'image/png');
-  }
-
-  // ──────── PROCESS DOCUMENT ────────
-  async function processDocument() {
-    if (!uploadedFile) { showError('Please upload a document or use "Load Demo Data" first. Or click "Run Instant Demo" below to test without an API key.'); return; }
-
-    hideError();
-    setProcessing(true);
+    currentWfId = data.workflow_id;
     showProgress();
-    resetPipeline();
-    hideResults();
-
-    try {
-      // Convert file to base64
-      const base64 = await fileToBase64(uploadedFile);
-
-      const payload = {
-        document_image: base64,
-        document_type: document.getElementById('docType').value,
-        country: document.getElementById('country').value,
-        app_type: document.getElementById('appType').value,
-        form_title: document.getElementById('formTitle').value,
-        form_fields: []
-      };
-
-      // Simulate agent steps with progress
-      await animateStep('step1','status1', 0, 25, '🔍 Agent 1: Analyzing document with Gemini Vision...');
-      await animateStep('step2','status2', 25, 50, '✅ Agent 2: Validating eligibility rules...');
-      await animateStep('step3','status3', 50, 75, '🗺 Agent 3: Mapping fields semantically...');
-      await animateStep('step4','status4', 75, 90, '📄 Agent 4: Generating PDF...');
-
-      log('📡 Sending to FormPilot API...', 'info');
-
-      const res = await fetch(`${API}/api/workflows/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'HTTP ' + res.status }));
-        throw new Error(err.detail || 'API call failed');
-      }
-
-      const data = await res.json();
-      currentResult = data;
-
-      setProgress(100);
-      log('✅ Pipeline complete!', 'ok');
-      markAllDone();
-
-      // Small pause then show results
-      await sleep(500);
-      showResults(data);
-
-    } catch (err) {
-      log('❌ Error: ' + err.message, 'err');
-      showError(err.message);
-      markError();
-    } finally {
-      setProcessing(false);
-    }
+    startPolling(currentWfId);
+  } catch(e) {
+    showError('Network error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🚀 Run Airia Pipeline';
   }
+}
 
-  // ──────── RESULTS RENDERING ────────
-  function showResults(data) {
-    const sec = document.getElementById('resultsSection');
-    sec.classList.add('show');
+async function runDemo() {
+  showProgress();
+  logMsg('info', '⚡ Running demo workflow (no API key needed)…');
+  updatePct(10);
 
-    // Profile
-    const profile = data.profile || {};
-    renderProfile(profile);
+  try {
+    const res  = await fetch('/api/workflows/demo', {method:'POST'});
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Demo failed'); return; }
 
-    // Validation
-    const validation = data.validation || {};
-    renderValidation(validation);
+    // Simulate pipeline steps
+    for (let i=1; i<=5; i++) {
+      await sleep(300);
+      activateStep(i);
+      updatePct(i*20);
+      const msgs = ['🔍 Document analyzed','✅ Rules validated','🗺️ Fields mapped','📄 PDF generated','📢 Notifications dispatched (demo)'];
+      logMsg('ok', msgs[i-1]);
+      completeStep(i);
+    }
+    updatePct(100);
+    document.getElementById('progTitle').textContent = '🎉 Demo Pipeline Complete';
+    document.querySelector('#progSection .dots').style.display='none';
+    setTimeout(() => showResults(data), 300);
+  } catch(e) {
+    showError('Demo error: ' + e.message);
+  }
+}
 
-    // Mappings
-    const mappings = data.mappings || [];
-    renderMappings(mappings);
+// ============================================================
+// Polling
+// ============================================================
+function startPolling(wfId) {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(() => pollStatus(wfId), 1200);
+}
 
-    // PDF
-    if (data.pdf_base64) {
-      const bytes = atob(data.pdf_base64);
-      const arr = new Uint8Array(bytes.length);
-      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-      const blob = new Blob([arr], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const btn = document.getElementById('downloadBtn');
-      btn.href = url;
-      btn.download = data.pdf_file_name || 'formpilot_form.pdf';
-      document.getElementById('pdfMeta').textContent =
-        `${data.pdf_file_name || 'form.pdf'} · ${(bytes.length/1024).toFixed(1)} KB`;
-      document.getElementById('pdfSection').style.display = 'block';
+async function pollStatus(wfId) {
+  try {
+    const res  = await fetch('/api/workflows/' + wfId + '/status');
+    const data = await res.json();
+    if (!res.ok) return;
+
+    const {status, step, progress, message, validation, profile} = data;
+
+    // Update pipeline viz
+    for (let i=1; i<=5; i++) {
+      if (i < step) completeStep(i);
+      else if (i === step) activateStep(i);
     }
 
-    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+    updatePct(progress || 0);
+    logMsg('info', message || '');
 
-  function renderProfile(profile) {
-    const conf = profile.overallConfidence || 0.9;
-    document.getElementById('ocrConfBadge').textContent = `${(conf*100).toFixed(0)}% confidence`;
-
-    const container = document.getElementById('profileFields');
-    container.innerHTML = '';
-
-    const fields = [
-      ['Full Name',    getVal(profile.fullName),    getConf(profile.fullName)],
-      ['Date of Birth',getVal(profile.dob),         getConf(profile.dob)],
-      ['Gender',       getVal(profile.gender),       getConf(profile.gender)],
-      ['Document ID',  getVal(profile.documentId),  getConf(profile.documentId)],
-      ['Doc Type',     profile.documentType || '–', 1],
-      ['Street',       getAddr(profile, 'street'),  0.85],
-      ['City',         getAddr(profile, 'city'),    0.9],
-      ['State',        getAddr(profile, 'state'),   0.9],
-      ['Pincode',      getAddr(profile, 'pincode'), 0.92],
-    ];
-
-    fields.forEach(([label, val, conf]) => {
-      if (!val || val === '–') return;
-      const cls = conf >= .9 ? 'conf-high' : conf >= .7 ? 'conf-med' : 'conf-low';
-      container.innerHTML += `
-        <div class="field-item">
-          <span class="field-label">${label}</span>
-          <span class="field-value">${esc(val)}</span>
-          <span class="field-conf ${cls}">${(conf*100).toFixed(0)}%</span>
-        </div>`;
-    });
-
-    if (profile.warnings && profile.warnings.length) {
-      container.innerHTML += `<div style="margin-top:10px;padding:10px 14px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:.78rem;color:#f59e0b">⚠️ ${profile.warnings.join(' · ')}</div>`;
+    if (status === 'awaiting_approval') {
+      clearInterval(pollInterval);
+      updatePct(40);
+      activateHITL(2);
+      showHITL(profile, validation);
+      return;
     }
+
+    if (status === 'failed' || status === 'rejected') {
+      clearInterval(pollInterval);
+      logMsg('err', status === 'rejected' ? '❌ Rejected by reviewer' : '❌ ' + (data.errors?.[0] || 'Pipeline failed'));
+      document.getElementById('progTitle').textContent = status === 'rejected' ? '❌ Rejected' : '❌ Failed';
+      document.querySelector('#progSection .dots').style.display='none';
+      document.getElementById('runBtn').disabled = false;
+      document.getElementById('runBtn').textContent = '🚀 Run Airia Pipeline';
+      return;
+    }
+
+    if (status === 'completed') {
+      clearInterval(pollInterval);
+      updatePct(100);
+      activateHITL(-1); // clear HITL state
+      document.getElementById('progTitle').textContent = '🎉 Airia Pipeline Complete!';
+      document.querySelector('#progSection .dots').style.display='none';
+      document.getElementById('runBtn').disabled = false;
+      document.getElementById('runBtn').textContent = '🚀 Run Airia Pipeline';
+      // Fetch full result
+      const rres = await fetch('/api/workflows/' + wfId + '/result');
+      const rdata = await rres.json();
+      setTimeout(() => showResults(rdata), 400);
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+// HITL
+// ============================================================
+function showHITL(profile, validation) {
+  const checks = validation?.validationResults || [];
+  const notes  = validation?.notes || '';
+
+  const checksHtml = checks.map(c =>
+    `<div class="hitl-check ${c.passed?'pass':''}">
+      <span>${c.passed?'✅':'❌'}</span>
+      <div><div style="font-weight:700">${c.check}</div><div style="color:var(--muted);font-size:.76rem;margin-top:2px">${c.explanation||''}</div></div>
+    </div>`
+  ).join('');
+
+  document.getElementById('hitlChecks').innerHTML = checksHtml || '<div style="color:var(--muted);font-size:.83rem">No specific checks returned.</div>';
+  document.getElementById('hitlNotes').textContent = notes;
+  document.getElementById('hitlOverlay').classList.add('show');
+
+  // Countdown
+  hitlSeconds = 300;
+  clearInterval(hitlTimer);
+  hitlTimer = setInterval(() => {
+    hitlSeconds--;
+    const m = Math.floor(hitlSeconds/60), s = hitlSeconds%60;
+    document.getElementById('hitlCountdown').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (hitlSeconds <= 0) { clearInterval(hitlTimer); hitlDecide(false); }
+  }, 1000);
+
+  logMsg('warn', '⚠️ HITL checkpoint — awaiting human review…');
+}
+
+async function hitlDecide(approve) {
+  clearInterval(hitlTimer);
+  document.getElementById('hitlOverlay').classList.remove('show');
+  if (!currentWfId) return;
+
+  const endpoint = approve ? '/api/workflows/'+currentWfId+'/approve' : '/api/workflows/'+currentWfId+'/reject';
+  try {
+    await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  } catch(e) {}
+
+  if (approve) {
+    logMsg('ok', '✅ Approved by reviewer — resuming pipeline…');
+    startPolling(currentWfId);
+  } else {
+    logMsg('err', '❌ Rejected by reviewer');
+    document.getElementById('progTitle').textContent = '❌ Rejected';
+    document.querySelector('#progSection .dots').style.display='none';
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').textContent = '🚀 Run Airia Pipeline';
   }
+}
 
-  function renderValidation(validation) {
-    const eligible = validation.eligible !== false;
-    const badge = document.getElementById('eligBadge');
-    badge.textContent = eligible ? '✅ Eligible' : '❌ Not Eligible';
-    badge.className = 'card-badge ' + (eligible ? 'badge-success' : '');
-    if (!eligible) badge.style.cssText = 'background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)';
+// ============================================================
+// Progress UI
+// ============================================================
+function showProgress() {
+  document.getElementById('progSection').classList.add('show');
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('progLog').innerHTML = '';
+  document.getElementById('progTitle').textContent = 'Running Airia Pipeline…';
+  document.querySelector('#progSection .dots').style.display='';
+  updatePct(0);
+  for (let i=1;i<=5;i++) resetStep(i);
+}
 
-    const content = document.getElementById('eligibilityContent');
-    content.innerHTML = `
-      <div class="eligibility-banner ${eligible?'eligible-yes':'eligible-no'}">
-        <span style="font-size:1.4rem">${eligible?'✅':'❌'}</span>
-        <div>
-          <div>${eligible?'All eligibility checks passed':'Eligibility check failed'}</div>
-          <div style="font-weight:400;font-size:.82rem;opacity:.8;margin-top:2px">${validation.notes||'–'}</div>
-        </div>
-      </div>
-      <div class="validation-list">
-        ${(validation.validationResults||[]).map(v => `
-          <div class="validation-item">
-            <span class="validation-icon">${v.passed?'✅':'❌'}</span>
-            <div>
-              <div class="validation-check">${esc(v.check||v.requirement||'Check')}</div>
-              <div class="validation-note">${esc(v.explanation||v.message||v.requirement||'')}</div>
-            </div>
-          </div>`).join('')}
+function updatePct(pct) {
+  document.getElementById('progPct').textContent = pct + '%';
+  document.getElementById('progBar').style.width = pct + '%';
+}
+
+function activateStep(n) {
+  const el = document.getElementById('step'+n);
+  if (!el) return;
+  el.className = 'ps active';
+  const st = document.getElementById('st'+n);
+  if (st) { st.textContent='Running…'; st.className='ps-st run'; }
+}
+
+function completeStep(n) {
+  const el = document.getElementById('step'+n);
+  if (!el) return;
+  el.className = 'ps done';
+  const st = document.getElementById('st'+n);
+  if (st) { st.textContent='✓ Done'; st.className='ps-st done'; }
+}
+
+function activateHITL(n) {
+  if (n < 0) return; // called with -1 to clear
+  const el = document.getElementById('step'+n);
+  if (!el) return;
+  el.className = 'ps hitl';
+  const st = document.getElementById('st'+n);
+  if (st) { st.textContent='⚠ Review'; st.className='ps-st hitl'; }
+}
+
+function resetStep(n) {
+  const el = document.getElementById('step'+n);
+  if (!el) return;
+  el.className = 'ps';
+  const st = document.getElementById('st'+n);
+  if (st) { st.textContent=''; st.className='ps-st'; }
+}
+
+function logMsg(type, msg) {
+  if (!msg) return;
+  const log = document.getElementById('progLog');
+  const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const line = document.createElement('div');
+  line.className = 'logln';
+  line.innerHTML = `<span class="logt">${now}</span><span class="logm ${type}">${msg}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ============================================================
+// Results
+// ============================================================
+function showResults(data) {
+  document.getElementById('resultsSection').classList.add('show');
+
+  // Platform status
+  renderPlatformStatus(data);
+
+  // Profile
+  renderProfile(data.profile);
+
+  // Validation
+  renderValidation(data.validation);
+
+  // Mappings
+  renderMappings(data.mappings);
+
+  // PDF
+  renderPDF(data);
+
+  // Refresh compliance dashboard with latest run
+  loadComplianceDashboard();
+}
+
+function renderPlatformStatus(data) {
+  const cards = [
+    {icon:'🤖', name:'Airia Pipeline', detail: data.airia_invoked ? 'Invoked via Airia' : 'Local orchestration', ok: !!data.airia_invoked},
+    {icon:'💬', name:'Slack', detail: data.slack_sent ? 'Notification sent ✓' : 'Not configured', ok: !!data.slack_sent},
+    {icon:'📁', name:'SharePoint', detail: data.sharepoint_url ? 'Uploaded ✓' : 'Not configured', ok: !!data.sharepoint_url},
+    {icon:'🌟', name:'Gemini Vision', detail: 'OCR complete', ok: true},
+  ];
+
+  document.getElementById('platformStatus').innerHTML = cards.map(c =>
+    `<div class="pl-card">
+      <span class="pl-icon">${c.icon}</span>
+      <div style="flex:1"><div class="pl-name">${c.name}</div><div class="pl-detail">${c.detail}</div></div>
+      <span class="pl-dot ${c.ok?'ok':'off'}"></span>
+    </div>`
+  ).join('');
+
+  if (data.sharepoint_url) {
+    document.querySelector('#platformStatus .pl-card:nth-child(3) .pl-detail').innerHTML =
+      `<a href="${data.sharepoint_url}" target="_blank" style="color:var(--primary)">View in SharePoint ↗</a>`;
+  }
+}
+
+function renderProfile(profile) {
+  if (!profile) return;
+  const conf = ((profile.overallConfidence || 0)*100).toFixed(0) + '%';
+  document.getElementById('confBadge').textContent = conf;
+
+  const fields = [
+    ['Full Name',    profile.fullName],
+    ['Date of Birth',profile.dob],
+    ['Gender',       profile.gender],
+    ['Document ID',  profile.documentId],
+    ['Document Type',{value:profile.documentType, confidence:1}],
+    ['Street',       (profile.address||{}).street],
+    ['City',         (profile.address||{}).city],
+    ['State',        (profile.address||{}).state],
+    ['Postal Code',  (profile.address||{}).pincode],
+  ];
+
+  document.getElementById('profileGrid').innerHTML = fields
+    .filter(([,f]) => f && (f.value||f) !== '')
+    .map(([label, f]) => {
+      const val  = typeof f === 'object' ? (f.value||'—') : (f||'—');
+      const conf = typeof f === 'object' ? f.confidence : 1;
+      const cls  = conf >= .85 ? 'conf-h' : conf >= .65 ? 'conf-m' : 'conf-l';
+      return `<div class="fi">
+        <span class="fi-key">${label}</span>
+        <span class="fi-val">${val}</span>
+        <span class="fi-conf ${cls}">${(conf*100).toFixed(0)}%</span>
       </div>`;
-  }
-
-  function renderMappings(mappings) {
-    document.getElementById('mappingsBadge').textContent = `${mappings.length} fields mapped`;
-    const tbody = document.getElementById('mappingsTable');
-    tbody.innerHTML = mappings.map(m => {
-      const c = (m.confidence||0)*100;
-      const cls = c>=90?'conf-high':c>=70?'conf-med':'conf-low';
-      return `<tr>
-        <td><strong>${esc(m.formField||'')}</strong></td>
-        <td style="color:var(--text-muted)">${esc(m.profileField||'')}</td>
-        <td>${esc(String(m.value||''))}</td>
-        <td>
-          <span class="field-conf ${cls}">${c.toFixed(0)}%</span>
-          <div class="mapping-conf-bar"><div class="mapping-conf-fill" style="width:${c}%"></div></div>
-        </td>
-      </tr>`;
     }).join('');
-  }
+}
 
-  // ──────── PIPELINE ANIMATION ────────
-  async function animateStep(stepId, statusId, from, to, msg) {
-    document.getElementById(stepId).classList.add('active');
-    document.getElementById(statusId).className = 'step-status running';
-    document.getElementById(statusId).innerHTML = `<span class="dots"><span></span><span></span><span></span></span> Running`;
-    log(msg, 'info');
-    await animateProgress(from, to, 600);
-  }
+function renderValidation(v) {
+  if (!v) return;
+  const eligible = v.eligible;
+  const score = v.complianceScore;
+  const risk = (v.riskLevel || '').toLowerCase();
+  document.getElementById('eligBadge').textContent = eligible ? 'Eligible' : 'Issues Found';
+  document.getElementById('eligBadge').className = 'badge ' + (eligible ? 'ok' : 'warn');
 
-  function markAllDone() {
-    [1,2,3,4].forEach(i => {
-      document.getElementById('step'+i).classList.remove('active');
-      document.getElementById('step'+i).classList.add('done');
-      document.getElementById('status'+i).className = 'step-status done';
-      document.getElementById('status'+i).textContent = '✓ Complete';
-    });
-  }
+  const banner = `<div class="elig-banner ${eligible?'elig-yes':'elig-no'}">
+    <span>${eligible?'✅':'⚠️'}</span>
+    <span>${eligible ? 'Applicant meets eligibility requirements' : v.notes || 'Eligibility issues detected'}</span>
+  </div>`;
 
-  function markError() {
-    [1,2,3,4].forEach(i => {
-      const el = document.getElementById('step'+i);
-      if (el.classList.contains('active')) {
-        el.classList.remove('active'); el.classList.add('error');
-        document.getElementById('status'+i).className = 'step-status error';
-        document.getElementById('status'+i).textContent = '✗ Failed';
-      }
-    });
-  }
+  const complianceMeta = (score !== undefined && score !== null) ?
+    `<div style="margin-bottom:10px;font-size:.8rem;color:var(--muted)">
+      Compliance Score: <strong style="color:var(--text)">${score}</strong>
+      ${risk ? `&nbsp;·&nbsp; Risk: <span class="risk-pill risk-${risk}" style="vertical-align:middle">${risk}</span>` : ''}
+    </div>` : '';
 
-  function resetPipeline() {
-    [1,2,3,4].forEach(i => {
-      document.getElementById('step'+i).className = 'pipeline-step';
-      document.getElementById('status'+i).textContent = '';
-      document.getElementById('status'+i).className = 'step-status';
-    });
-  }
+  const checks = (v.validationResults || []).map(r =>
+    `<div class="vi">
+      <span class="vi-icon">${r.passed?'✅':'❌'}</span>
+      <div><div class="vi-text">${r.check}</div><div class="vi-note">${r.explanation||''}</div></div>
+    </div>`
+  ).join('');
 
-  // ──────── PROGRESS ────────
-  function showProgress() {
-    document.getElementById('progressSection').classList.add('show');
-    document.getElementById('progressLog').innerHTML = '';
-    setProgress(0);
-  }
+  document.getElementById('eligBody').innerHTML = banner + complianceMeta + '<div class="vlist">' + checks + '</div>';
+}
 
-  function setProgress(pct) {
-    document.getElementById('progressBar').style.width = pct + '%';
-    document.getElementById('progressPct').textContent = pct + '%';
-  }
+function renderMappings(mappings) {
+  if (!mappings || !mappings.length) return;
+  document.getElementById('mappingBadge').textContent = mappings.length + ' fields mapped';
+  document.getElementById('mappingBody').innerHTML = mappings.map(m => {
+    const pct = ((m.confidence||0)*100).toFixed(0);
+    return `<tr>
+      <td><strong>${m.formField}</strong></td>
+      <td style="color:var(--muted)">${m.profileField||'—'}</td>
+      <td>${m.value||'—'}</td>
+      <td style="min-width:100px">
+        <span style="font-size:.8rem;font-weight:600">${pct}%</span>
+        <div class="cbar"><div class="cbar-fill" style="width:${pct}%"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+}
 
-  async function animateProgress(from, to, duration) {
-    const steps = 30;
-    const step = (to - from) / steps;
-    const delay = duration / steps;
-    for (let i = 0; i <= steps; i++) {
-      setProgress(Math.round(from + step * i));
-      await sleep(delay);
+function renderPDF(data) {
+  const meta = `${data.pdf_file_name||'form.pdf'}`;
+  document.getElementById('pdfMeta').innerHTML =
+    `AI-generated, ready to submit &nbsp;·&nbsp; <code>${meta}</code><br/>
+    <span style="font-size:.78rem;color:var(--dim);margin-top:4px;display:block">
+    Gemini 2.0 Flash &nbsp;·&nbsp; Powered by Airia &nbsp;·&nbsp; ReportLab PDF</span>`;
+
+  if (data.pdf_base64) {
+    const href = 'data:application/pdf;base64,' + data.pdf_base64;
+    document.getElementById('pdfActions').innerHTML =
+      `<a class="btn-dl" href="${href}" download="${data.pdf_file_name||'form.pdf'}">⬇ Download PDF</a>
+       <button class="btn-retry" onclick="location.reload()">↺ New Form</button>`;
+  } else {
+    document.getElementById('pdfActions').innerHTML =
+      `<button class="btn-retry" onclick="location.reload()">↺ Try Again</button>`;
+  }
+}
+
+// ============================================================
+// Compliance dashboard
+// ============================================================
+async function loadComplianceDashboard() {
+  try {
+    const res = await fetch('/api/compliance/dashboard?limit=25');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderComplianceDashboard(data);
+  } catch (e) {
+    // Silent fail keeps demo flow resilient if dashboard API is unavailable.
+  }
+}
+
+function renderComplianceDashboard(data) {
+  const summary = data.summary || {};
+  const topViolations = data.top_violations || [];
+  const docBreakdown = data.document_breakdown || [];
+  const history = data.recent_workflows || [];
+
+  const kpis = [
+    ['Total Runs', summary.total_workflows ?? 0],
+    ['Eligible', summary.eligible_workflows ?? 0],
+    ['Compliance Rate', `${summary.compliance_rate ?? 0}%`],
+    ['High Risk', summary.high_risk_workflows ?? 0],
+    ['Avg Score', `${summary.avg_compliance_score ?? 0}`],
+  ];
+
+  document.getElementById('complianceKpis').innerHTML = kpis.map(([label, value]) =>
+    `<div class="comp-kpi">
+      <div class="comp-kpi-label">${label}</div>
+      <div class="comp-kpi-value">${value}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('complianceViolations').innerHTML = (topViolations.length
+    ? topViolations
+    : [{check: 'No violations recorded yet', count: 0}]
+  ).map(item =>
+    `<div class="comp-item">
+      <span class="comp-item-name">${item.check}</span>
+      <span class="comp-item-val">${item.count}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('complianceDocs').innerHTML = (docBreakdown.length
+    ? docBreakdown
+    : [{document_type: 'No data', compliance_rate: 0, avg_compliance_score: 0}]
+  ).slice(0, 6).map(item =>
+    `<div class="comp-item">
+      <span class="comp-item-name">${item.document_type}</span>
+      <span class="comp-item-val">${item.compliance_rate}% · ${item.avg_compliance_score}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('complianceHistory').innerHTML = (history.length
+    ? history
+    : [{workflow_id: '-', document_type: '-', app_type: '-', compliance_score: '-', risk_level: 'low', violation_count: 0}]
+  ).slice(0, 12).map(item => {
+    const risk = (item.risk_level || 'low').toLowerCase();
+    const score = item.compliance_score === null || item.compliance_score === undefined ? '-' : item.compliance_score;
+    return `<tr>
+      <td>${String(item.workflow_id || '-').slice(0, 8)}</td>
+      <td>${item.document_type || '-'}</td>
+      <td>${item.app_type || '-'}</td>
+      <td>${score}</td>
+      <td><span class="risk-pill risk-${risk}">${risk}</span></td>
+      <td>${item.violation_count ?? 0}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function runCaseStudy() {
+  const note = document.getElementById('caseStudyNote');
+  if (note) note.textContent = 'Running synthetic case study…';
+
+  try {
+    const res = await fetch('/api/compliance/case-study?sample_size=100');
+    if (!res.ok) throw new Error('Case-study API unavailable');
+    const data = await res.json();
+    const summary = data.summary || {};
+
+    if (note) {
+      note.textContent = `Case Study: ${summary.sample_size || 0} runs · ${summary.eligibility_rate || 0}% eligibility · Avg score ${summary.avg_compliance_score || 0} · ${summary.runtime_ms || 0}ms`;
     }
+  } catch (e) {
+    if (note) note.textContent = 'Case-study run failed. Check API logs and retry.';
   }
+}
 
-  function log(msg, type='info') {
-    const log = document.getElementById('progressLog');
-    const time = new Date().toTimeString().slice(0,8);
-    const line = document.createElement('div');
-    line.className = 'log-line';
-    line.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${esc(msg)}</span>`;
-    log.appendChild(line);
-    log.scrollTop = log.scrollHeight;
-  }
+// ============================================================
+// Utility
+// ============================================================
+function showError(msg) {
+  const el = document.getElementById('errBanner');
+  el.textContent = '❌ ' + msg;
+  el.classList.add('show');
+}
 
-  // ──────── HELPERS ────────
-  function showError(msg) {
-    const b = document.getElementById('errorBanner');
-    b.textContent = '⚠️ ' + msg;
-    b.classList.add('show');
-  }
-  function hideError() { document.getElementById('errorBanner').classList.remove('show'); }
-  function hideResults() { document.getElementById('resultsSection').classList.remove('show'); }
+function clearError() {
+  document.getElementById('errBanner').classList.remove('show');
+}
 
-  function setProcessing(on) {
-    const btn = document.getElementById('processBtn');
-    btn.disabled = on;
-    btn.textContent = on ? '⏳ Processing…' : '🤖 Process with AI Agents';
-  }
-
-  function resetUI() {
-    removeFile();
-    hideResults();
-    document.getElementById('progressSection').classList.remove('show');
-    resetPipeline();
-    window.scrollTo({ top: document.getElementById('demo').offsetTop - 80, behavior: 'smooth' });
-  }
-
-  function fileToBase64(file) {
-    return new Promise((res, rej) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // Strip the Data URL prefix (data:image/jpeg;base64,...)
-        const result = reader.result;
-        const base64 = result.includes(',') ? result.split(',')[1] : result;
-        res(base64);
-      };
-      reader.onerror = rej;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function getVal(field) { return field && field.value ? field.value : '–'; }
-  function getConf(field){ return field && field.confidence != null ? field.confidence : 0.9; }
-  function getAddr(p, k)  { return p.address && p.address[k] ? (p.address[k].value || p.address[k]) : ''; }
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  // ──────── SERVER DEMO (no API key needed) ────────
-  async function runServerDemo() {
-    hideError();
-    document.getElementById('demoBtn').disabled = true;
-    document.getElementById('demoBtn').textContent = '⏳ Running demo…';
-    showProgress();
-    resetPipeline();
-    hideResults();
-
-    try {
-      await animateStep('step1','status1', 0, 25, '🔍 Agent 1: Analyzing mock Aadhaar card…');
-      await animateStep('step2','status2', 25, 50, '✅ Agent 2: Validating eligibility rules…');
-      await animateStep('step3','status3', 50, 75, '🗺 Agent 3: Mapping 11 form fields…');
-      await animateStep('step4','status4', 75, 90, '📄 Agent 4: Generating professional PDF…');
-
-      log('📡 Calling /api/workflows/demo…', 'info');
-
-      const res = await fetch(`${API}/api/workflows/demo`, { method: 'POST' });
-      if (!res.ok) throw new Error('Demo API returned ' + res.status);
-
-      const data = await res.json();
-      currentResult = data;
-
-      setProgress(100);
-      log('✅ Demo complete! Real PDF generated.', 'ok');
-      markAllDone();
-
-      await sleep(500);
-      showResults(data);
-    } catch (err) {
-      log('❌ ' + err.message, 'err');
-      showError('Demo failed: ' + err.message);
-      markError();
-    } finally {
-      document.getElementById('demoBtn').disabled = false;
-      document.getElementById('demoBtn').textContent = '⚡ Run Instant Demo — No API Key Needed';
-    }
-  }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>

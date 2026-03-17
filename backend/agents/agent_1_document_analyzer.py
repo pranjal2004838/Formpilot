@@ -3,7 +3,8 @@ import json
 import base64
 import logging
 from typing import Dict, Any
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from datetime import datetime
 
 from agents.base import Agent, AgentInput, AgentOutput
@@ -28,8 +29,8 @@ class DocumentAnalyzerAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="DocumentAnalyzer")
-        genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.client = genai.Client(api_key=gemini_api_key)
+        self.model_name = "gemini-2.0-flash"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Execute document analysis"""
@@ -106,12 +107,15 @@ class DocumentAnalyzerAgent(Agent):
         
         try:
             # Call Gemini Vision API
-            response = self.model.generate_content([
-                prompt,
-                {"mime_type": "image/jpeg", "data": image_bytes}
-            ])
-            
-            response_text = response.text
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(data=image_bytes, mime_type=self._detect_mime_type(image_bytes)),
+                ],
+            )
+
+            response_text = self._response_text(response)
             
             # Clean markdown wrapping if present
             if "```json" in response_text:
@@ -179,6 +183,41 @@ class DocumentAnalyzerAgent(Agent):
         except Exception as e:
             logger.error(f"Gemini API error: {str(e)}")
             raise
+
+    @staticmethod
+    def _response_text(response: Any) -> str:
+        text = (getattr(response, "text", None) or "").strip()
+        if text:
+            return text
+
+        candidates = getattr(response, "candidates", None) or []
+        chunks = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if not parts:
+                continue
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    chunks.append(part_text)
+
+        text = "\n".join(chunks).strip()
+        if not text:
+            raise Exception("Empty response from Gemini model")
+        return text
+
+    @staticmethod
+    def _detect_mime_type(image_bytes: bytes) -> str:
+        if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
+        if image_bytes.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        if image_bytes.startswith((b"GIF87a", b"GIF89a")):
+            return "image/gif"
+        if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
+            return "image/webp"
+        return "image/jpeg"
     
     def _get_extraction_prompt(self, doc_type: str) -> str:
         """Get specialized extraction prompt for document type"""
@@ -253,6 +292,114 @@ Return ONLY valid JSON with no markdown:
     "pincode_confidence": 0.80,
     "documentId": "...",
     "documentId_confidence": 0.98,
+    "overall_confidence": 0.90,
+    "warnings": []
+}
+"""
+
+        elif doc_type == "vehicle_registration":
+            return """
+You are an expert at reading Indian vehicle registration certificates (RC).
+
+Extract:
+1. Full Name of registered owner
+2. Date of Birth (if present, DD/MM/YYYY)
+3. Gender (if present)
+4. Address (street, city, state, pincode)
+5. Vehicle registration number as documentId (example: KA01AB1234)
+
+Return ONLY valid JSON with this shape:
+{
+    "fullName": "...",
+    "fullName_confidence": 0.92,
+    "dob": "...",
+    "dob_confidence": 0.75,
+    "gender": "...",
+    "gender_confidence": 0.70,
+    "address": {
+        "street": "...",
+        "city": "...",
+        "state": "...",
+        "pincode": "..."
+    },
+    "street_confidence": 0.82,
+    "city_confidence": 0.88,
+    "state_confidence": 0.90,
+    "pincode_confidence": 0.90,
+    "documentId": "KA01AB1234",
+    "documentId_confidence": 0.97,
+    "overall_confidence": 0.90,
+    "warnings": []
+}
+"""
+
+        elif doc_type == "property_deed":
+            return """
+You are an expert at reading Indian property deed documents.
+
+Extract:
+1. Full Name (primary owner)
+2. Date of Birth (if present, DD/MM/YYYY)
+3. Gender (if present)
+4. Property address (street, city, state, pincode)
+5. Deed reference number as documentId (format similar to STATE-DEED-YYYY-NNNN)
+
+Return ONLY valid JSON with this shape:
+{
+    "fullName": "...",
+    "fullName_confidence": 0.90,
+    "dob": "...",
+    "dob_confidence": 0.70,
+    "gender": "...",
+    "gender_confidence": 0.65,
+    "address": {
+        "street": "...",
+        "city": "...",
+        "state": "...",
+        "pincode": "..."
+    },
+    "street_confidence": 0.90,
+    "city_confidence": 0.90,
+    "state_confidence": 0.90,
+    "pincode_confidence": 0.88,
+    "documentId": "KA-DEED-2024-0451",
+    "documentId_confidence": 0.93,
+    "overall_confidence": 0.88,
+    "warnings": []
+}
+"""
+
+        elif doc_type == "gst_registration":
+            return """
+You are an expert at reading Indian GST registration certificates.
+
+Extract:
+1. Legal business name into fullName
+2. Date of registration (if present) into dob field in DD/MM/YYYY format
+3. Business constitution / gender-like marker into gender if available else empty string
+4. Registered business address (street, city, state, pincode)
+5. GSTIN as documentId
+
+Return ONLY valid JSON with this shape:
+{
+    "fullName": "...",
+    "fullName_confidence": 0.92,
+    "dob": "...",
+    "dob_confidence": 0.65,
+    "gender": "...",
+    "gender_confidence": 0.55,
+    "address": {
+        "street": "...",
+        "city": "...",
+        "state": "...",
+        "pincode": "..."
+    },
+    "street_confidence": 0.88,
+    "city_confidence": 0.89,
+    "state_confidence": 0.92,
+    "pincode_confidence": 0.90,
+    "documentId": "29ABCDE1234F1Z5",
+    "documentId_confidence": 0.97,
     "overall_confidence": 0.90,
     "warnings": []
 }

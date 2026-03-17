@@ -94,7 +94,7 @@ GOOGLE_AI_STUDIO_KEY=your_key_here
 ### Step 2: Install Gemini SDK
 
 ```bash
-pip install google-generativeai
+pip install google-genai
 ```
 
 ### Step 3: Update Agent 1 (OCR) to Use Gemini
@@ -103,7 +103,8 @@ Create `backends/agents/agent_1_gemini_version.py`:
 
 ```python
 import anthropic
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import base64
 import json
 import logging
@@ -125,8 +126,8 @@ class DocumentAnalyzerGeminiAgent(Agent):
     
     def __init__(self, gemini_api_key: str, anthropic_key: str = None):
         super().__init__(name="DocumentAnalyzerGemini")
-        genai.configure(api_key=gemini_api_key)
-        self.gemini_model = genai.GenerativeModel('gemini-pro-vision')
+        self.gemini_client = genai.Client(api_key=gemini_api_key)
+        self.gemini_model = "gemini-2.0-flash"
         
         # Optional: Anthropic for validation (if you want dual validation)
         self.anthropic_client = None
@@ -200,10 +201,13 @@ class DocumentAnalyzerGeminiAgent(Agent):
         
         prompt = self._get_extraction_prompt(doc_type)
         
-        response = self.gemini_model.generate_content([
-            prompt,
-            {"mime_type": "image/jpeg", "data": image_bytes}
-        ])
+        response = self.gemini_client.models.generate_content(
+            model=self.gemini_model,
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+            ]
+        )
         
         try:
             # Parse response
@@ -340,7 +344,7 @@ class DocumentAnalyzerGeminiAgent(Agent):
 ```python
 # backends/agents/agent_2_gemini_rules.py
 
-import google.generativeai as genai
+from google import genai
 import json
 from agents.base import Agent, AgentInput, AgentOutput
 
@@ -353,8 +357,8 @@ class RulesValidatorGeminiAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="RulesValidatorGemini")
-        genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.client = genai.Client(api_key=gemini_api_key)
+        self.model = "gemini-2.0-flash"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Validate eligibility using Gemini"""
@@ -379,7 +383,10 @@ class RulesValidatorGeminiAgent(Agent):
         }}
         """
         
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+        )
         
         try:
             result = json.loads(response.text)
@@ -401,7 +408,7 @@ class RulesValidatorGeminiAgent(Agent):
 ```python
 # backends/agents/agent_3_gemini_mapper.py
 
-import google.generativeai as genai
+from google import genai
 import json
 from agents.base import Agent, AgentInput, AgentOutput
 
@@ -414,8 +421,8 @@ class FieldMapperGeminiAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="FieldMapperGemini")
-        genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.client = genai.Client(api_key=gemini_api_key)
+        self.model = "gemini-2.0-flash"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Map fields using Gemini"""
@@ -441,7 +448,10 @@ class FieldMapperGeminiAgent(Agent):
         ]
         """
         
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+        )
         
         try:
             mappings = json.loads(response.text)
@@ -516,15 +526,14 @@ GEMINI_API_KEY=your_key_here
 EOF
 
 # 3. Install SDK
-pip install google-generativeai
+pip install google-genai
 
 # 4. Test it works
 python3 << 'PYTHON'
-import google.generativeai as genai
+from google import genai
 
-genai.configure(api_key="YOUR_KEY")
-model = genai.GenerativeModel('gemini-pro')
-response = model.generate_content("Say OK")
+client = genai.Client(api_key="YOUR_KEY")
+response = client.models.generate_content(model="gemini-2.0-flash", contents="Say OK")
 print(response.text)
 # Should print: OK
 PYTHON
@@ -580,7 +589,7 @@ Agent1 = DocumentAnalyzerOpenAIAgent()
 
 1. **Confirm Gemini API works:**
    ```bash
-   python3 -c "import google.generativeai; print('✓ Gemini ready')"
+    python3 -c "from google import genai; print('✓ Gemini ready')"
    ```
 
 2. **I'll update all agents to use Gemini** (instead of OpenAI/Claude)

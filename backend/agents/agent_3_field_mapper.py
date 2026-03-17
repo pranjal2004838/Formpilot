@@ -1,7 +1,7 @@
 """Agent 3: Field Mapper - Map extracted identity to form fields"""
 import logging
 from typing import Dict, List, Any
-import google.generativeai as genai
+from google import genai
 import json
 
 from agents.base import Agent, AgentInput, AgentOutput
@@ -26,8 +26,8 @@ class FieldMapperAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="FieldMapper")
-        genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.client = genai.Client(api_key=gemini_api_key)
+        self.model_name = "gemini-2.0-flash"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Map fields using semantic matching"""
@@ -92,6 +92,7 @@ class FieldMapperAgent(Agent):
             "gender": profile.get('gender', {}).get('value', ''),
             "address": {k: v.get('value', '') for k, v in profile.get('address', {}).items()},
             "documentId": profile.get('documentId', {}).get('value', ''),
+            "documentType": profile.get('documentType', ''),
         }
         
         form_field_names = [f.get('name', '') for f in form_fields]
@@ -133,8 +134,11 @@ Be comprehensive - include all form fields.
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            response_text = response.text
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            response_text = self._response_text(response)
             
             # Clean markdown if present
             if "```json" in response_text:
@@ -150,6 +154,26 @@ Be comprehensive - include all form fields.
             logger.warning("Gemini semantic matching failed, falling back to fuzzy matching")
             # Fallback to fuzzy string matching
             return self._fuzzy_match_fields(profile_data, form_field_names)
+
+    @staticmethod
+    def _response_text(response: Any) -> str:
+        text = (getattr(response, "text", None) or "").strip()
+        if text:
+            return text
+
+        candidates = getattr(response, "candidates", None) or []
+        chunks = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if not parts:
+                continue
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    chunks.append(part_text)
+
+        return "\n".join(chunks).strip()
     
     def _fuzzy_match_fields(
         self, 
@@ -163,6 +187,19 @@ Be comprehensive - include all form fields.
         
         for form_field in form_field_names:
             if not form_field:
+                continue
+
+            form_field_lower = form_field.lower()
+
+            # High-confidence aliases for vertical document workflows.
+            if any(token in form_field_lower for token in ["gst", "vehicle", "deed", "registration", "rc", "document"]):
+                mappings.append({
+                    "formField": form_field,
+                    "profileField": "documentId",
+                    "value": str(profile_data.get("documentId", "")),
+                    "transformation": "none",
+                    "confidence": 0.92,
+                })
                 continue
             
             best_match = None
