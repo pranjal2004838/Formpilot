@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FormPilot — Agent Pipeline Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a0e1a 0%, #0f1419 100%);
+      color: #f1f5f9;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #4f8ef7, #7c5cbf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #8b9bb4;
+      font-size: 1.05rem;
+    }
+
+    /* ============ PIPELINE SECTION ============ */
+    .pipeline {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 60px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .agent-box {
+      flex: 1;
+      min-width: 200px;
+      max-width: 280px;
+      background: rgba(20, 30, 48, 0.8);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-box::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #4f8ef7, #7c5cbf);
+      opacity: 0.6;
+    }
+
+    .agent-box:hover {
+      border-color: rgba(79, 142, 247, 0.6);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(79, 142, 247, 0.15);
+    }
+
+    .agent-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #4f8ef7, #3b6fd4);
+      border-radius: 50%;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .agent-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .agent-desc {
+      font-size: 0.85rem;
+      color: #8b9bb4;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .agent-model {
+      display: inline-block;
+      background: rgba(79, 142, 247, 0.1);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      color: #4f8ef7;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(79, 142, 247, 0.4);
+      margin: 0 -10px;
+    }
+
+    @media (max-width: 768px) {
+      .arrow {
+        transform: rotate(90deg);
+        margin: -10px 0;
+      }
+    }
+
+    /* ============ CAPABILITIES GRID ============ */
+    .capabilities-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .capabilities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+
+    .capability-card {
+      background: rgba(20, 30, 48, 0.6);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .capability-card:hover {
+      border-color: rgba(34, 211, 238, 0.5);
+      background: rgba(20, 30, 48, 0.8);
+    }
+
+    .capability-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .capability-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+      color: #22d3ee;
+    }
+
+    .capability-card p {
+      font-size: 0.9rem;
+      color: #8b9bb4;
+      line-height: 1.6;
+    }
+
+    /* ============ DOC TYPES SECTION ============ */
+    .doc-types-section {
+      background: rgba(20, 30, 48, 0.5);
+      border: 1px solid rgba(124, 92, 191, 0.2);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .doc-types-section h3 {
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      color: #c4b5fd;
+    }
+
+    .doc-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .doc-type-badge {
+      background: linear-gradient(135deg, rgba(79, 142, 247, 0.1), rgba(124, 92, 191, 0.1));
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: default;
+    }
+
+    .doc-type-badge:hover {
+      border-color: rgba(79, 142, 247, 0.6);
+      background: linear-gradient(135deg, rgba(79, 142, 247, 0.15), rgba(124, 92, 191, 0.15));
+    }
+
+    .doc-type-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .doc-type-region {
+      font-size: 0.75rem;
+      color: #8b9bb4;
+    }
+
+    /* ============ STATS ============ */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat {
+      background: rgba(34, 211, 238, 0.08);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #22d3ee;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #8b9bb4;
+    }
+
+    /* ============ FOOTER ============ */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid rgba(79, 142, 247, 0.1);
+      color: #8b9bb4;
+      font-size: 0.9rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #4f8ef7;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #22d3ee;
+    }
+
+    /* ============ ANIMATIONS ============ */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .agent-box {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .agent-box:nth-child(1) { animation-delay: 0.1s; }
+    .agent-box:nth-child(2) { animation-delay: 0.2s; }
+    .agent-box:nth-child(3) { animation-delay: 0.3s; }
+    .agent-box:nth-child(4) { animation-delay: 0.4s; }
+    .agent-box:nth-child(5) { animation-delay: 0.5s; }
+
+    .capability-card {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .capability-card:nth-child(1) { animation-delay: 0.1s; }
+    .capability-card:nth-child(2) { animation-delay: 0.2s; }
+    .capability-card:nth-child(3) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 FormPilot Agent Pipeline</h1>
+      <p class="subtitle">Multi-agent orchestration for government form automation</p>
+    </header>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Specialized Agents</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Document Types</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Languages</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Deterministic</div>
+      </div>
+    </div>
+
+    <!-- AGENT PIPELINE -->
+    <h2 class="capabilities-title">📊 Agent Orchestra</h2>
+    <div class="pipeline">
+      <div class="agent-box">
+        <div class="agent-num">1️⃣</div>
+        <div class="agent-name">Document Analyzer</div>
+        <div class="agent-desc">Extract identity data from images via Gemini Vision OCR</div>
+        <div class="agent-model">Gemini 2.0 Flash</div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="agent-box">
+        <div class="agent-num">2️⃣</div>
+        <div class="agent-name">Rules Validator</div>
+        <div class="agent-desc">Deterministic eligibility checks (UIDAI/GST/state rules)</div>
+        <div class="agent-model">Deterministic</div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="agent-box">
+        <div class="agent-num">3️⃣</div>
+        <div class="agent-name">Field Mapper</div>
+        <div class="agent-desc">Semantic field matching with fuzzy fallback</div>
+        <div class="agent-model">AI + Heuristic</div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="agent-box">
+        <div class="agent-num">4️⃣</div>
+        <div class="agent-name">PDF Generator</div>
+        <div class="agent-desc">Professional document generation via ReportLab</div>
+        <div class="agent-model">Deterministic</div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="agent-box">
+        <div class="agent-num">5️⃣</div>
+        <div class="agent-name">Browser Submitter</div>
+        <div class="agent-desc">Live form discovery + HITL security blockers</div>
+        <div class="agent-model">Playwright + HITL</div>
+      </div>
+    </div>
+
+    <!-- CAPABILITIES -->
+    <h2 class="capabilities-title">✨ Enterprise Capabilities</h2>
+    <div class="capabilities-grid">
+      <div class="capability-card">
+        <div class="capability-icon">🔒</div>
+        <h3>Governance</h3>
+        <p>HITL approval gates, deterministic rules, no hallucination—enterprise-grade compliance.</p>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon">📋</div>
+        <h3>HITL Security Blockers</h3>
+        <p>Automatic detection of CAPTCHA, OTP, and password gates—pauses for user intervention.</p>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon">📡</div>
+        <h3>Integrations</h3>
+        <p>Airia orchestration, Slack notifications, SharePoint upload—complete ecosystem.</p>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon">📊</div>
+        <h3>Audit Trail</h3>
+        <p>Full workflow history with timestamps, field mappings, and decision logs.</p>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon">🌐</div>
+        <h3>Real-time Submission</h3>
+        <p>Live browser automation with POST/GET policy enforcement and blocker detection.</p>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon">🚀</div>
+        <h3>Production Ready</h3>
+        <p>Deployed on Railway, async/await architecture, comprehensive test coverage.</p>
+      </div>
+    </div>
+
+    <!-- DOCUMENT TYPES -->
+    <div class="doc-types-section">
+      <h3>📄 Supported Document Types</h3>
+      <div class="doc-types-grid">
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🛂 Passport</div>
+          <div class="doc-type-region">Global</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🆔 Aadhaar</div>
+          <div class="doc-type-region">India</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">💳 PAN Card</div>
+          <div class="doc-type-region">India</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🚗 Driving Licence</div>
+          <div class="doc-type-region">Global</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🚙 Vehicle Reg.</div>
+          <div class="doc-type-region">India</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🏠 Property Deed</div>
+          <div class="doc-type-region">India</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">🏢 GST Cert.</div>
+          <div class="doc-type-region">India</div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-name">📑 Generic</div>
+          <div class="doc-type-region">Global</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>FormPilot Enterprise v2.0 — Airia AI Agents Hackathon 2026 | Track 2: Active Agents</p>
+      <div class="footer-links">
+        <a href="/docs">API Docs</a>
+        <a href="/api/demo/capabilities">Capabilities JSON</a>
+        <a href="/health">Health Check</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

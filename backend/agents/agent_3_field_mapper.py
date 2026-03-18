@@ -6,6 +6,7 @@ import json
 
 from agents.base import Agent, AgentInput, AgentOutput
 from fuzzywuzzy import fuzz
+from utils.form_mapping import map_profile_to_form_fields
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,8 @@ class FieldMapperAgent(Agent):
         
         profile = input_data.metadata.get("profile")
         form_fields = input_data.metadata.get("form_fields", [])
+        country = input_data.metadata.get("country", "")
+        app_type = input_data.metadata.get("app_type", "")
         
         if not profile:
             return AgentOutput(
@@ -50,7 +53,7 @@ class FieldMapperAgent(Agent):
         
         try:
             # Match fields using Gemini semantic understanding
-            mappings = await self._match_fields_with_gemini(profile, form_fields)
+            mappings = await self._match_fields_with_gemini(profile, form_fields, country=country, app_type=app_type)
             
             # Calculate overall confidence
             if mappings:
@@ -81,7 +84,10 @@ class FieldMapperAgent(Agent):
     async def _match_fields_with_gemini(
         self, 
         profile: Dict[str, Any], 
-        form_fields: List[Dict]
+        form_fields: List[Dict],
+        *,
+        country: str = "",
+        app_type: str = "",
     ) -> List[Dict]:
         """Match form fields to profile using Gemini semantic understanding"""
         
@@ -95,7 +101,19 @@ class FieldMapperAgent(Agent):
             "documentType": profile.get('documentType', ''),
         }
         
-        form_field_names = [f.get('name', '') for f in form_fields]
+        field_catalog = [
+            {
+                "name": field.get("name", ""),
+                "label": field.get("label", ""),
+                "type": field.get("type", "text"),
+                "placeholder": field.get("placeholder", ""),
+                "options": [
+                    option.get("label") or option.get("text") or option.get("value")
+                    for option in field.get("options", []) or []
+                ],
+            }
+            for field in form_fields
+        ]
         
         prompt = f"""
 You are an expert at matching form fields to personal data.
@@ -104,7 +122,7 @@ I have extracted this person's data:
 {json.dumps(profile_data, indent=2)}
 
 And a form with these fields:
-{json.dumps(form_field_names, indent=2)}
+{json.dumps(field_catalog, indent=2)}
 
 For EACH form field:
 1. Find the best matching data from the profile
@@ -130,6 +148,7 @@ Return ONLY valid JSON array with no markdown:
     ...
 ]
 
+Use the field `name` as the value of `formField` in your output.
 Be comprehensive - include all form fields.
 """
         
@@ -147,13 +166,25 @@ Be comprehensive - include all form fields.
                 response_text = response_text.split("```")[1].split("```")[0].strip()
             
             mappings = json.loads(response_text)
+            if not mappings:
+                return map_profile_to_form_fields(
+                    profile,
+                    form_fields,
+                    country=country,
+                    app_type=app_type,
+                )
             
             return mappings
         
         except json.JSONDecodeError:
             logger.warning("Gemini semantic matching failed, falling back to fuzzy matching")
             # Fallback to fuzzy string matching
-            return self._fuzzy_match_fields(profile_data, form_field_names)
+            return map_profile_to_form_fields(
+                profile,
+                form_fields,
+                country=country,
+                app_type=app_type,
+            )
 
     @staticmethod
     def _response_text(response: Any) -> str:

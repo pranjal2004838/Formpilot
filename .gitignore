@@ -73,3 +73,6 @@ Thumbs.db
 
 # Manual test assets (simulated IDs/forms)
 backend/tests/manual_assets/
+
+# Browser automation run artifacts
+assets/browser-runs/

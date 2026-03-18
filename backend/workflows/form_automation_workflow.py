@@ -20,6 +20,7 @@ from agents.agent_1_document_analyzer import DocumentAnalyzerAgent
 from agents.agent_2_rules_validator import RulesValidatorAgent
 from agents.agent_3_field_mapper import FieldMapperAgent
 from agents.agent_4_pdf_generator import PDFGeneratorAgent
+from agents.agent_5_browser_submitter import BrowserSubmissionAgent
 from agents.base import AgentInput, AgentOutput
 from models.schemas import WorkflowOutput
 
@@ -50,6 +51,7 @@ class FormAutomationWorkflow:
         self.agent_2 = RulesValidatorAgent(gemini_api_key)
         self.agent_3 = FieldMapperAgent(gemini_api_key)
         self.agent_4 = PDFGeneratorAgent()
+        self.agent_5 = BrowserSubmissionAgent()
         self.slack = slack_client
         self.sharepoint = sharepoint_client
         self.airia = airia_client
@@ -286,6 +288,25 @@ class FormAutomationWorkflow:
             # ============================================================
             # Agent 3: Field Mapping
             # ============================================================
+            browser_config = workflow_input.get("browser_automation") or {}
+            if browser_config.get("target_url") and not workflow_input.get("form_fields"):
+                upd(step=3, step_name="Field Mapper", progress=48,
+                    message="🌐 Discovering live form fields with Playwright…")
+                discovery = await self.agent_5.discover_form_fields(
+                    browser_config["target_url"],
+                    headless=bool(browser_config.get("headless", True)),
+                    timeout_ms=int(browser_config.get("timeout_ms", 30000)),
+                )
+                workflow_input["form_fields"] = discovery.get("fields", [])
+                upd(portal_fields=workflow_input["form_fields"])
+                self._audit_log(
+                    state,
+                    "portal_fields_discovered",
+                    workflow_id=self.workflow_id,
+                    target_url=browser_config["target_url"],
+                    field_count=len(workflow_input["form_fields"]),
+                )
+
             upd(step=3, step_name="Field Mapper", progress=50,
                 message="🗺️ Semantically mapping fields with Gemini…")
 
@@ -294,6 +315,8 @@ class FormAutomationWorkflow:
                 metadata={
                     "profile": profile,
                     "form_fields": workflow_input.get("form_fields", []),
+                    "country": workflow_input.get("country", "IN"),
+                    "app_type": workflow_input.get("app_type", "passport"),
                 },
             ))
 
@@ -340,10 +363,91 @@ class FormAutomationWorkflow:
                 pdf_file_name=file_name)
             logger.info("[%s] Agent 4 done — PDF generated", self.workflow_id)
 
+            browser_submission = None
+            if browser_config.get("target_url"):
+                upd(step=5, step_name="Browser Submitter", progress=88,
+                    message="🌐 Launching headless Chromium for live form submission…")
+                a5_result = await self.agent_5.run(AgentInput(
+                    workflow_id=self.workflow_id,
+                    metadata={
+                        "profile": profile,
+                        "mappings": mappings,
+                        "browser_automation": browser_config,
+                    },
+                ))
+
+                # =============== NEW: Browser HITL Handling ===============
+                if a5_result.status == "awaiting_user_interaction":
+                    # User must solve CAPTCHA/OTP/password gate before we proceed
+                    browser_submission = a5_result.data
+                    interaction_type = browser_submission.get("interaction_type", "solve_security_challenge")
+                    interaction_prompt = browser_submission.get("interaction_prompt", "")
+                    session_id = browser_submission.get("interaction_session_id")
+                    
+                    logger.info("[%s] Browser HITL triggered — interaction type: %s", 
+                               self.workflow_id, interaction_type)
+                    
+                    self._audit_log(
+                        state,
+                        "browser_interaction_required",
+                        workflow_id=self.workflow_id,
+                        interaction_type=interaction_type,
+                        session_id=session_id,
+                        prompt=interaction_prompt,
+                    )
+                    
+                    upd(
+                        status="awaiting_user_interaction",
+                        step=5,
+                        progress=90,
+                        message=f"🔒 Awaiting user to complete: {interaction_type}",
+                        current_interaction_type=interaction_type,
+                        browser_submission=browser_submission,
+                    )
+                    
+                    # Send notification with instructions
+                    if self.slack:
+                        app_base = workflow_input.get("app_base_url", "")
+                        await self.slack.send_browser_interaction_request(
+                            self.workflow_id,
+                            interaction_type,
+                            interaction_prompt,
+                            app_base,
+                        )
+                    
+                    # Return immediately — wait for user to call resume endpoint
+                    workflow_output.status = "awaiting_user_interaction"
+                    workflow_output.browser_submission = browser_submission
+                    workflow_output.message = interaction_prompt
+                    return workflow_output
+                # =============== END Browser HITL Handling ===============
+
+                elif a5_result.status == "error":
+                    upd(status="failed", message="Browser submission failed", errors=a5_result.errors)
+                    workflow_output.status = "failed"
+                    workflow_output.errors = a5_result.errors
+                    workflow_output.message = "Browser submission failed"
+                    return workflow_output
+
+                else:  # a5_result.status == "success"
+                    browser_submission = a5_result.data
+                    upd(step=5, progress=92,
+                        message="✅ Browser automation completed",
+                        browser_submission=browser_submission)
+                
+                self._audit_log(
+                    state,
+                    "browser_submission_completed",
+                    workflow_id=self.workflow_id,
+                    target_url=browser_config["target_url"],
+                    submitted=browser_submission.get("submitted", False),
+                    resolved_url=browser_submission.get("resolved_url"),
+                )
+
             # ============================================================
             # Step 5: Notifications (Slack + SharePoint)
             # ============================================================
-            upd(step=5, step_name="Notification Dispatcher", progress=88,
+            upd(step=5, step_name="Notification Dispatcher", progress=94,
                 message="📢 Dispatching Slack notification & SharePoint upload…")
 
             slack_sent = False
@@ -385,6 +489,8 @@ class FormAutomationWorkflow:
             workflow_output.profile = profile
             workflow_output.validation = validation
             workflow_output.mappings = mappings
+            workflow_output.portal_fields = workflow_input.get("form_fields")
+            workflow_output.browser_submission = browser_submission
             workflow_output.pdf_base64 = pdf_base64
             workflow_output.pdf_file_name = file_name
             workflow_output.completed_at = datetime.now()

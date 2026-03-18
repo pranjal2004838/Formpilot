@@ -200,6 +200,87 @@ class SlackClient:
 
         return await self._post_blocks(blocks)
 
+    async def send_browser_interaction_request(
+        self,
+        workflow_id: str,
+        interaction_type: str,
+        interaction_prompt: str,
+        app_base_url: str = "",
+    ) -> bool:
+        """
+        Send a browser interaction request (CAPTCHA, OTP, password gate, etc.).
+        
+        User must complete the challenge in the browser, then click "Completed"
+        button to resume form submission.
+        """
+        if not self.configured:
+            return False
+
+        # Format interaction type for display
+        type_labels = {
+            "solve_captcha": "🔐 CAPTCHA Challenge",
+            "enter_otp": "📱 OTP Verification",
+            "solve_password_gate": "🔑 Password Authentication",
+            "solve_security_challenge": "🛡️ Security Challenge",
+        }
+        type_label = type_labels.get(interaction_type, "Security Challenge")
+
+        resume_url = f"{app_base_url}/api/workflows/{workflow_id}/browser-interaction/resume"
+
+        blocks: List[Dict] = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{type_label} — FormPilot Form Submission",
+                    "emoji": True,
+                },
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*Action Required:*\n"
+                        f"{interaction_prompt}\n\n"
+                        f"Once you've completed the security challenge, click the button below "
+                        f"to resume form submission."
+                    ),
+                },
+            },
+            {"type": "divider"},
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "✅ Challenge Completed — Resume Submit",
+                            "emoji": True,
+                        },
+                        "style": "primary",
+                        "url": resume_url,
+                        "action_id": "formpilot_browser_resume",
+                    },
+                ],
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": (
+                            f"Workflow `{workflow_id[:12]}…`  ·  "
+                            f"Session will timeout in 5 minutes of inactivity."
+                        ),
+                    }
+                ],
+            },
+        ]
+
+        return await self._post_blocks(blocks)
+
     async def send_error_notification(self, workflow_id: str, error: str) -> bool:
         """Send an error alert."""
         if not self.configured:

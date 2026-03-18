@@ -148,6 +148,8 @@ class WorkflowStore:
             "profile": state.get("profile"),
             "validation": state.get("validation"),
             "mappings": state.get("mappings"),
+            "portal_fields": state.get("portal_fields"),
+            "browser_submission": state.get("browser_submission"),
             "pdf_base64": state.get("pdf_base64"),
             "pdf_file_name": state.get("pdf_file_name"),
             "slack_sent": state.get("slack_sent", False),

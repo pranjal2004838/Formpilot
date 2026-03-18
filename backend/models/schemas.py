@@ -2,6 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Optional, List
 from datetime import datetime
+import uuid
 
 
 class ExtractedField(BaseModel):
@@ -50,13 +51,40 @@ class FormMapping(BaseModel):
     confidence: float
 
 
+class BrowserSubmissionResult(BaseModel):
+    """Browser automation submission result with HITL support"""
+    submitted: bool
+    resolved_url: Optional[str] = None
+    matched_fields: int = 0
+    skipped_fields: int = 0
+    screenshots: List[str] = Field(default_factory=list)
+    submit_allowed: bool = False
+    
+    # Human-In-The-Loop (HITL) fields
+    needs_human_interaction: bool = False
+    interaction_type: Optional[str] = None  # "solve_captcha" | "enter_otp" | "solve_password_gate" | "other"
+    interaction_prompt: Optional[str] = None  # Human-readable prompt
+    interaction_session_id: Optional[str] = None  # UUID to track pause/resume
+    paused_at: Optional[datetime] = None
+    filled_values: Optional[Dict[str, str]] = None  # Auto-saved field values before pause
+    form_snapshot: Optional[Dict] = None  # Form state when paused
+    blockers_detected: List[str] = Field(default_factory=list)  # List of blocker reasons
+    
+    # Metadata
+    policy_reasons: List[str] = Field(default_factory=list)
+    government_domain: bool = False
+    method: str = "unknown"  # "get" | "post"
+
+
 class WorkflowOutput(BaseModel):
     """Complete workflow output"""
     workflow_id: str
-    status: str  # "in_progress" | "completed" | "failed" | "rejected" | "cancelled"
+    status: str  # "in_progress" | "completed" | "failed" | "rejected" | "cancelled" | "awaiting_user_interaction"
     profile: Optional[Dict] = None
     validation: Optional[Dict] = None
     mappings: Optional[List[Dict]] = None
+    portal_fields: Optional[List[Dict]] = None
+    browser_submission: Optional[BrowserSubmissionResult] = None
     pdf_url: Optional[str] = None
     pdf_base64: Optional[str] = None
     pdf_file_name: Optional[str] = None
