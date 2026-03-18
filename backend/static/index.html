@@ -127,33 +127,38 @@
     .story-shell{position:relative;overflow:hidden;background:linear-gradient(130deg,rgba(79,142,247,.12),rgba(34,211,238,.06) 42%,rgba(124,92,191,.11));border:1px solid rgba(79,142,247,.35);border-radius:var(--r);padding:42px 34px;box-shadow:0 18px 70px rgba(0,0,0,.35)}
     .story-shell::before{content:'';position:absolute;inset:-40% auto auto -20%;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.18),transparent 68%);pointer-events:none}
     .story-shell::after{content:'';position:absolute;inset:auto -10% -35% auto;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,191,.18),transparent 72%);pointer-events:none}
+    .story-head{position:relative;z-index:1;max-width:850px}
     .story-kicker{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(34,211,238,.11);border:1px solid rgba(34,211,238,.35);border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--cyan);margin-bottom:16px}
     .story-kicker-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:pulse 1.8s ease infinite}
-    .story-title{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:800;line-height:1.08;letter-spacing:-.8px;max-width:920px;margin-bottom:14px}
-    .story-title .accent{background:linear-gradient(90deg,#8cc8ff 0,#7dd3fc 40%,#b79bff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .story-sub{font-size:1rem;color:#c8d6ea;max-width:850px;line-height:1.75}
-    .story-pill-row{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0 8px}
-    .story-pill{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);font-size:.76rem;font-weight:700;color:#d9e7f8;letter-spacing:.2px}
-    .story-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-top:24px}
-    .story-card{grid-column:span 6;background:rgba(12,18,31,.72);border:1px solid rgba(139,155,180,.25);border-radius:12px;padding:20px 18px;position:relative;overflow:hidden;transition:all .25s ease}
-    .story-card::before{content:'';position:absolute;inset:0 auto auto 0;width:100%;height:2px;background:linear-gradient(90deg,rgba(34,211,238,.75),rgba(79,142,247,.45),transparent)}
-    .story-card:hover{transform:translateY(-3px);border-color:rgba(79,142,247,.55);box-shadow:0 12px 40px rgba(7,20,40,.55)}
-    .story-step{font-size:.72rem;font-weight:800;letter-spacing:.8px;color:var(--cyan);text-transform:uppercase;margin-bottom:9px}
-    .story-card h3{font-size:1.05rem;font-weight:800;margin-bottom:8px;line-height:1.35}
-    .story-card p{font-size:.86rem;color:var(--muted);line-height:1.65}
-    .story-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .story-token{padding:4px 9px;border-radius:999px;font-size:.69rem;font-weight:700;background:rgba(79,142,247,.13);border:1px solid rgba(79,142,247,.3);color:#bdd7ff}
-    .story-arrow{font-size:.8rem;color:#7a8eb0}
-    .impact-band{margin-top:18px;display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
-    .impact-copy{background:linear-gradient(130deg,rgba(79,142,247,.1),rgba(34,211,238,.08));border:1px solid rgba(79,142,247,.3);border-radius:12px;padding:20px}
-    .impact-copy h3{font-size:1.15rem;font-weight:800;margin-bottom:8px}
-    .impact-copy p{font-size:.88rem;color:#c6d5ea;line-height:1.7}
-    .impact-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .impact-metric{background:rgba(12,18,31,.72);border:1px solid rgba(139,155,180,.25);border-radius:12px;padding:16px;text-align:center}
-    .impact-num{display:block;font-size:1.55rem;font-weight:800;color:#a4dcff;line-height:1}
-    .impact-label{display:block;font-size:.72rem;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:6px}
-    .story-cta-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid rgba(139,155,180,.22)}
-    .story-cta-copy{font-size:.9rem;color:#c7d8ee;max-width:620px}
+    .story-title{font-size:clamp(1.9rem,4.5vw,3rem);font-weight:800;line-height:1.08;letter-spacing:-.8px;max-width:900px;margin-bottom:12px}
+    .story-sub{font-size:.98rem;color:#c8d6ea;max-width:760px;line-height:1.7}
+
+    .story-road{--road-progress:8%;position:relative;margin-top:28px;padding:10px 0}
+    .story-road::before{content:'';position:absolute;left:50%;top:14px;bottom:14px;width:14px;border-radius:999px;transform:translateX(-50%);background:linear-gradient(180deg,rgba(20,35,57,.9),rgba(11,21,37,.92));border:1px solid rgba(139,155,180,.28);z-index:0}
+    .story-road::after{content:'';position:absolute;left:50%;top:14px;height:calc((100% - 28px) * (var(--road-progress) / 100));width:14px;border-radius:999px;transform:translateX(-50%);background:linear-gradient(180deg,#22d3ee 0,#4f8ef7 58%,#7c5cbf 100%);box-shadow:0 0 22px rgba(34,211,238,.38);transition:height .65s cubic-bezier(.22,.64,.3,1);z-index:0}
+    .story-miles{display:grid;gap:16px;position:relative;z-index:2}
+    .story-mile{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);align-items:center;gap:14px}
+    .story-mile .mile-card{grid-column:1}
+    .story-mile .mile-empty{grid-column:3;height:1px}
+    .story-mile:nth-child(even) .mile-card{grid-column:3}
+    .story-mile:nth-child(even) .mile-empty{grid-column:1}
+    .mile-pin-wrap{grid-column:2;display:flex;flex-direction:column;align-items:center;gap:7px}
+    .mile-pin{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;background:rgba(20,33,52,.95);border:1px solid rgba(139,155,180,.42);color:#c9d8ed;transition:all .35s ease}
+    .mile-chip{font-size:.67rem;font-weight:700;letter-spacing:.35px;text-transform:uppercase;color:#9cb5d4;background:rgba(79,142,247,.14);border:1px solid rgba(79,142,247,.35);border-radius:999px;padding:3px 10px;white-space:nowrap}
+    .mile-card{background:rgba(12,18,31,.76);border:1px solid rgba(139,155,180,.28);border-radius:12px;padding:14px 14px;transition:all .25s ease}
+    .mile-step{display:block;font-size:.68rem;font-weight:800;letter-spacing:.65px;text-transform:uppercase;color:var(--cyan);margin-bottom:5px}
+    .mile-card h3{font-size:1rem;font-weight:800;margin-bottom:6px;line-height:1.35}
+    .mile-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
+    .story-mile.seen .mile-pin{background:linear-gradient(135deg,var(--cyan),#60a5fa);border-color:rgba(34,211,238,.6);color:#031325;box-shadow:0 0 16px rgba(34,211,238,.35)}
+    .story-mile.seen .mile-card{border-color:rgba(79,142,247,.52);box-shadow:0 10px 26px rgba(6,17,33,.5)}
+
+    .story-facts{margin-top:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .story-fact{background:rgba(12,18,31,.72);border:1px solid rgba(139,155,180,.25);border-radius:12px;padding:14px 10px;text-align:center}
+    .story-fact strong{display:block;font-size:1.35rem;line-height:1;color:#9edcff;font-weight:800}
+    .story-fact span{display:block;margin-top:5px;font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.35px}
+
+    .story-cta-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid rgba(139,155,180,.22)}
+    .story-cta-copy{font-size:.88rem;color:#c7d8ee;max-width:620px}
     .story-cta{border:none;border-radius:999px;padding:12px 20px;background:linear-gradient(135deg,var(--cyan),#0ea5e9);color:#00152a;font-weight:800;font-size:.84rem;letter-spacing:.3px;cursor:pointer;transition:all .2s}
     .story-cta:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(34,211,238,.3)}
 
@@ -374,9 +379,8 @@
       .pa{display:none}
       .ps{min-width:140px}
       .story-shell{padding:30px 22px}
-      .story-grid{grid-template-columns:1fr 1fr}
-      .story-card{grid-column:span 1}
-      .impact-band{grid-template-columns:1fr}
+      .story-mile{grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr)}
+      .story-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media(max-width:600px){
       .form-row{grid-template-columns:1fr}
@@ -386,9 +390,14 @@
       .hitl-actions{flex-direction:column}
       .comp-panels{grid-template-columns:1fr}
       .story-title{font-size:1.7rem}
-      .story-pill-row{gap:7px}
-      .story-grid{grid-template-columns:1fr}
-      .impact-metrics{grid-template-columns:1fr 1fr}
+      .story-road{padding:6px 0}
+      .story-road::before,.story-road::after{left:22px;transform:none;width:10px}
+      .story-mile{grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:flex-start}
+      .mile-pin-wrap{grid-column:1;align-items:flex-start;padding-top:6px}
+      .story-mile .mile-card,.story-mile:nth-child(even) .mile-card{grid-column:2}
+      .story-mile .mile-empty,.story-mile:nth-child(even) .mile-empty{display:none}
+      .mile-chip{white-space:normal;line-height:1.25;padding:4px 8px}
+      .story-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
       .story-cta-row{align-items:flex-start}
     }
   </style>
@@ -514,90 +523,89 @@
 <section id="story" class="section story-wrap">
   <div class="container">
     <div class="story-shell">
-      <div class="story-kicker reveal"><span class="story-kicker-dot"></span>First Enterprise Form Automation Powered by Airia + Gemini</div>
-      <h2 class="story-title reveal">Your team stops copy-pasting forms and starts shipping compliant applications on autopilot.</h2>
-      <p class="story-sub reveal">FormPilot reads documents, validates policy, maps fields, prepares submission-ready outputs, and safely handles live portals with human checkpoints. Judges should understand the product in seconds: <strong>less manual ops, fewer errors, faster outcomes, full governance.</strong></p>
-
-      <div class="story-pill-row reveal">
-        <span class="story-pill">What it does: automates form pipelines</span>
-        <span class="story-pill">How it works: 5 specialized agents</span>
-        <span class="story-pill">Why it matters: faster, safer, auditable</span>
-        <span class="story-pill">Game changer: HITL + live browser automation</span>
+      <div class="story-head">
+        <div class="story-kicker reveal"><span class="story-kicker-dot"></span>First Enterprise Form Automation Powered by Airia + Gemini</div>
+        <h2 class="story-title reveal">The FormPilot Road: a guided journey from document to compliant submission.</h2>
+        <p class="story-sub reveal">Each milestone advances the workflow, reduces manual work, and keeps humans in control when risk appears.</p>
       </div>
 
-      <div class="story-grid">
-        <article class="story-card reveal">
-          <div class="story-step">01 · Understand</div>
-          <h3>It understands your documents instantly.</h3>
-          <p>Gemini Vision extracts identity fields from passports, Aadhaar, PAN, licenses, and more. The output is structured, confidence-scored, and ready for deterministic validation.</p>
-          <div class="story-flow">
-            <span class="story-token">Document In</span><span class="story-arrow">→</span>
-            <span class="story-token">Gemini OCR</span><span class="story-arrow">→</span>
-            <span class="story-token">Profile JSON</span>
-          </div>
-        </article>
+      <div class="story-road reveal" id="storyRoad">
+        <div class="story-miles">
+          <article class="story-mile reveal">
+            <div class="mile-card">
+              <span class="mile-step">Milestone 01</span>
+              <h3>Read</h3>
+              <p>Gemini Vision turns uploaded IDs into clean profile JSON.</p>
+            </div>
+            <div class="mile-pin-wrap">
+              <div class="mile-pin">01</div>
+              <span class="mile-chip">Gemini Vision</span>
+            </div>
+            <div class="mile-empty" aria-hidden="true"></div>
+          </article>
 
-        <article class="story-card reveal">
-          <div class="story-step">02 · Govern</div>
-          <h3>It enforces compliance before submission.</h3>
-          <p>Rule-based checks catch inconsistencies and risky cases. If something needs judgment, HITL pauses the flow and asks a human reviewer to approve or reject with a full audit trail.</p>
-          <div class="story-flow">
-            <span class="story-token">Rules Engine</span><span class="story-arrow">→</span>
-            <span class="story-token">Risk Signal</span><span class="story-arrow">→</span>
-            <span class="story-token">HITL Decision</span>
-          </div>
-        </article>
+          <article class="story-mile reveal">
+            <div class="mile-card">
+              <span class="mile-step">Milestone 02</span>
+              <h3>Govern</h3>
+              <p>Deterministic rules validate compliance, with HITL for blockers.</p>
+            </div>
+            <div class="mile-pin-wrap">
+              <div class="mile-pin">02</div>
+              <span class="mile-chip">Rules + HITL</span>
+            </div>
+            <div class="mile-empty" aria-hidden="true"></div>
+          </article>
 
-        <article class="story-card reveal">
-          <div class="story-step">03 · Execute</div>
-          <h3>It maps and prepares forms with near-zero manual work.</h3>
-          <p>AI mapping aligns extracted fields to target schemas, then produces professional PDFs and optional live browser submission. Your team reviews outcomes, not repetitive data entry.</p>
-          <div class="story-flow">
-            <span class="story-token">Field Mapping</span><span class="story-arrow">→</span>
-            <span class="story-token">PDF Output</span><span class="story-arrow">→</span>
-            <span class="story-token">Portal Ready</span>
-          </div>
-        </article>
+          <article class="story-mile reveal">
+            <div class="mile-card">
+              <span class="mile-step">Milestone 03</span>
+              <h3>Prepare</h3>
+              <p>AI mapping fills target forms and generates submission-ready PDFs.</p>
+            </div>
+            <div class="mile-pin-wrap">
+              <div class="mile-pin">03</div>
+              <span class="mile-chip">Mapper + PDF</span>
+            </div>
+            <div class="mile-empty" aria-hidden="true"></div>
+          </article>
 
-        <article class="story-card reveal">
-          <div class="story-step">04 · Scale</div>
-          <h3>It closes the loop across enterprise systems.</h3>
-          <p>Airia orchestrates agents, Slack alerts stakeholders, SharePoint stores artifacts, and every step is persisted. This is not a single prompt demo; it is an operations system.</p>
-          <div class="story-flow">
-            <span class="story-token">Airia</span><span class="story-arrow">→</span>
-            <span class="story-token">Slack</span><span class="story-arrow">→</span>
-            <span class="story-token">SharePoint</span>
-          </div>
-        </article>
-      </div>
-
-      <div class="impact-band">
-        <div class="impact-copy reveal">
-          <h3>Why this is game-changing for teams and public workflows</h3>
-          <p>Manual form ops are slow, error-prone, and hard to audit. FormPilot compresses the cycle from "collect + verify + map + submit" into one governed pipeline. The result is higher throughput, stronger compliance confidence, and a user experience that feels modern rather than bureaucratic.</p>
+          <article class="story-mile reveal">
+            <div class="mile-card">
+              <span class="mile-step">Milestone 04</span>
+              <h3>Close Loop</h3>
+              <p>Airia orchestrates delivery, while Slack and SharePoint complete ops.</p>
+            </div>
+            <div class="mile-pin-wrap">
+              <div class="mile-pin">04</div>
+              <span class="mile-chip">Airia + Integrations</span>
+            </div>
+            <div class="mile-empty" aria-hidden="true"></div>
+          </article>
         </div>
-        <div class="impact-metrics reveal">
-          <div class="impact-metric">
-            <span class="impact-num" data-counter="5">0</span>
-            <span class="impact-label">AI Agents</span>
-          </div>
-          <div class="impact-metric">
-            <span class="impact-num" data-counter="8">0</span>
-            <span class="impact-label">Doc Types</span>
-          </div>
-          <div class="impact-metric">
-            <span class="impact-num" data-counter="3">0</span>
-            <span class="impact-label">Integrations</span>
-          </div>
-          <div class="impact-metric">
-            <span class="impact-num" data-counter="95">0</span>
-            <span class="impact-label">OCR Accuracy %</span>
-          </div>
+      </div>
+
+      <div class="story-facts reveal">
+        <div class="story-fact">
+          <strong data-counter="5">0</strong>
+          <span>Agents</span>
+        </div>
+        <div class="story-fact">
+          <strong data-counter="8">0</strong>
+          <span>Doc Types</span>
+        </div>
+        <div class="story-fact">
+          <strong data-counter="3">0</strong>
+          <span>Integrations</span>
+        </div>
+        <div class="story-fact">
+          <strong data-counter="95" data-suffix="%">0</strong>
+          <span>OCR Accuracy</span>
         </div>
       </div>
 
       <div class="story-cta-row reveal">
-        <p class="story-cta-copy">Now that the value is clear, run it yourself below: upload a document, execute the full Airia pipeline, and inspect every artifact and decision.</p>
+        <p class="story-cta-copy">Scroll the road, then test the same flow live in the demo section below.</p>
         <button class="story-cta" onclick="scrollToDemo()">Try Yourself ↓</button>
       </div>
     </div>
@@ -1052,19 +1060,34 @@ function scrollToDemo() {
 
 function initStoryAnimations() {
   const revealEls = document.querySelectorAll('.reveal');
-  if (!revealEls.length || !('IntersectionObserver' in window)) {
-    revealEls.forEach(el => el.classList.add('in-view'));
+  const storyRoad = document.getElementById('storyRoad');
+  const mileEls = Array.from(document.querySelectorAll('.story-mile'));
+
+  if (!revealEls.length && !mileEls.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    revealEls.forEach(el => {
+      el.classList.add('in-view');
+      const counters = el.matches('[data-counter]') ? [el] : Array.from(el.querySelectorAll('[data-counter]'));
+      counters.forEach(counter => {
+        if (!counter.dataset.done) animateCounter(counter);
+      });
+    });
+    mileEls.forEach(mile => mile.classList.add('seen'));
+    if (storyRoad) storyRoad.style.setProperty('--road-progress', '100%');
     return;
   }
 
-  const counterObserver = new IntersectionObserver((entries, obs) => {
+  const revealObserver = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       const el = entry.target;
       el.classList.add('in-view');
 
-      const counter = el.querySelector('[data-counter]');
-      if (counter && !counter.dataset.done) animateCounter(counter);
+      const counters = el.matches('[data-counter]') ? [el] : Array.from(el.querySelectorAll('[data-counter]'));
+      counters.forEach(counter => {
+        if (!counter.dataset.done) animateCounter(counter);
+      });
 
       obs.unobserve(el);
     });
@@ -1073,12 +1096,47 @@ function initStoryAnimations() {
   revealEls.forEach((el, idx) => {
     const delay = Math.min(idx * 35, 260);
     el.style.transitionDelay = `${delay}ms`;
-    counterObserver.observe(el);
+    revealObserver.observe(el);
+  });
+
+  if (storyRoad && mileEls.length) {
+    initStoryRoadProgress(storyRoad, mileEls);
+  }
+}
+
+function initStoryRoadProgress(roadEl, mileEls) {
+  const seen = new Set();
+
+  const updateProgress = () => {
+    const total = mileEls.length;
+    if (!total) return;
+    const progress = Math.max(8, Math.round((seen.size / total) * 100));
+    roadEl.style.setProperty('--road-progress', `${progress}%`);
+  };
+
+  updateProgress();
+
+  const roadObserver = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const mile = entry.target;
+      const idx = Number(mile.dataset.mileIndex || 0);
+      if (idx) seen.add(idx);
+      mile.classList.add('seen');
+      updateProgress();
+      obs.unobserve(mile);
+    });
+  }, {threshold: .45, rootMargin: '0px 0px -10% 0px'});
+
+  mileEls.forEach((mile, index) => {
+    mile.dataset.mileIndex = String(index + 1);
+    roadObserver.observe(mile);
   });
 }
 
 function animateCounter(el) {
   const target = Number(el.dataset.counter || 0);
+  const suffix = el.dataset.suffix || '';
   const duration = 900;
   const start = performance.now();
   el.dataset.done = '1';
@@ -1087,7 +1145,7 @@ function animateCounter(el) {
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     const value = Math.round(target * eased);
-    el.textContent = value;
+    el.textContent = `${value}${suffix}`;
     if (progress < 1) requestAnimationFrame(tick);
   };
 
