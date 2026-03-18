@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FormPilot Extension Sandbox</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      margin: 0;
+      padding: 30px;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.4rem;
+    }
+
+    p {
+      color: #475569;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 10px 0 5px;
+      font-size: 0.9rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.94rem;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .row {
+      margin-top: 16px;
+    }
+
+    .hint {
+      margin-top: 14px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>FormPilot Autofill Sandbox</h1>
+    <p>This page is for testing the extension autofill flow. Load this page in Chrome, open the FormPilot extension, upload an ID image, and run autofill.</p>
+
+    <form id="sandboxForm" autocomplete="off">
+      <div class="grid">
+        <div>
+          <label for="fullName">Full Name</label>
+          <input id="fullName" name="fullName" placeholder="Enter full name" />
+        </div>
+        <div>
+          <label for="dateOfBirth">Date of Birth</label>
+          <input id="dateOfBirth" name="dateOfBirth" type="text" placeholder="DD/MM/YYYY" />
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="gender">Gender</label>
+          <select id="gender" name="gender">
+            <option value="">Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="documentId">Document ID</label>
+          <input id="documentId" name="documentId" placeholder="Passport / Aadhaar / PAN / GSTIN" />
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="address">Address</label>
+        <textarea id="address" name="address" placeholder="Street address"></textarea>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="city">City</label>
+          <input id="city" name="city" />
+        </div>
+        <div>
+          <label for="state">State</label>
+          <input id="state" name="state" />
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="pincode">Pincode / Postal Code</label>
+          <input id="pincode" name="pincode" />
+        </div>
+        <div>
+          <label for="nationality">Nationality</label>
+          <input id="nationality" name="nationality" />
+        </div>
+      </div>
+
+      <div class="hint">
+        Expected fields after autofill: fullName, dateOfBirth, gender, address, city, state, pincode, documentId.
+      </div>
+    </form>
+  </div>
+</body>
+</html>

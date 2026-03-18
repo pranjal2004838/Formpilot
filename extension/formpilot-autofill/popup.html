@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FormPilot Autofill</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="panel">
+    <header class="header">
+      <h1>FormPilot Autofill</h1>
+      <p>Upload ID document and autofill this page.</p>
+    </header>
+
+    <section class="card">
+      <label class="label" for="apiBase">FormPilot API URL</label>
+      <input id="apiBase" class="input" type="url" placeholder="http://127.0.0.1:8010" />
+
+      <label class="label" for="identityFile">Identity Card / Document</label>
+      <input id="identityFile" class="input" type="file" accept="image/*,.pdf" />
+
+      <div class="grid">
+        <div>
+          <label class="label" for="documentType">Document</label>
+          <select id="documentType" class="input">
+            <option value="passport">Passport</option>
+            <option value="aadhaar">Aadhaar</option>
+            <option value="pan">PAN</option>
+            <option value="driving_license">Driving Licence</option>
+            <option value="vehicle_registration">Vehicle Registration</option>
+            <option value="property_deed">Property Deed</option>
+            <option value="gst_registration">GST Registration</option>
+            <option value="generic">Generic</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="country">Country</label>
+          <select id="country" class="input">
+            <option value="IN">India</option>
+            <option value="US">United States</option>
+            <option value="UK">United Kingdom</option>
+            <option value="CA">Canada</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="label" for="appType">Application Type</label>
+      <select id="appType" class="input">
+        <option value="passport">Passport</option>
+        <option value="visa">Visa</option>
+        <option value="driver_license">Driver License</option>
+        <option value="vehicle_registration">Vehicle Registration</option>
+        <option value="property_registration">Property Registration</option>
+        <option value="gst_registration">GST Registration</option>
+        <option value="hr_onboarding">HR Onboarding</option>
+        <option value="compliance">Compliance</option>
+        <option value="generic">Generic</option>
+      </select>
+    </section>
+
+    <section class="card actions">
+      <button id="saveBtn" class="btn secondary">Save Settings</button>
+      <button id="runBtn" class="btn primary">Analyze and Autofill</button>
+    </section>
+
+    <section class="card status-card">
+      <div id="status" class="status">Ready.</div>
+      <ul id="resultList" class="result-list"></ul>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
