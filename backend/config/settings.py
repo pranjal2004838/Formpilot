@@ -66,8 +66,8 @@ class Settings:
     SUPPORTED_IMAGE_FORMATS: list = ["jpg", "jpeg", "png", "pdf", "bmp", "gif", "webp"]
     
     # Gemini API Settings
-    GEMINI_MODEL_VISION: str = "gemini-pro"  # Works for both vision and text
-    GEMINI_MODEL_TEXT: str = "gemini-pro"
+    GEMINI_MODEL_VISION: str = None  # Will be auto-detected
+    GEMINI_MODEL_TEXT: str = None    # Will be auto-detected
     GEMINI_TEMPERATURE: float = 0.3  # Lower for more consistent results
     GEMINI_MAX_TOKENS: int = 1024
     
@@ -76,8 +76,42 @@ class Settings:
     REQUIRE_SECOND_OPINION: bool = False  # Require validation for high-stakes forms
     
     @classmethod
+    def get_working_model(cls):
+        """Auto-detect the first working Gemini model"""
+        if cls.GEMINI_MODEL_VISION and cls.GEMINI_MODEL_TEXT:
+            return  # Already set
+        
+        api_key = cls.GEMINI_API_KEY
+        if not api_key:
+            # No API key, use mock
+            cls.GEMINI_MODEL_VISION = "gemini-pro"
+            cls.GEMINI_MODEL_TEXT = "gemini-pro"
+            return
+        
+        try:
+            from config.model_detector import detect_working_model
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info("🔍 Auto-detecting working Gemini model...")
+            working_model = detect_working_model(api_key)
+            
+            cls.GEMINI_MODEL_VISION = working_model
+            cls.GEMINI_MODEL_TEXT = working_model
+            logger.info(f"✅ Using model: {working_model}")
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"⚠️ Model detection failed: {e}. Using gemini-pro.")
+            cls.GEMINI_MODEL_VISION = "gemini-pro"
+            cls.GEMINI_MODEL_TEXT = "gemini-pro"
+    
+    @classmethod
     def validate(cls):
         """Validate critical configuration"""
+        cls.get_working_model()  # Auto-detect model on validation
+        
         if not cls.GEMINI_API_KEY and not cls.ANTHROPIC_API_KEY:
             import logging
             logger = logging.getLogger(__name__)

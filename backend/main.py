@@ -36,8 +36,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Config
+# Config & Auto-detect Gemini Model
 # ---------------------------------------------------------------------------
+from config.settings import settings
+
+# Auto-detect the working Gemini model
+logger.info("Initializing FormPilot configuration...")
+settings.validate()
+logger.info(f"✅ Using Gemini model: VISION={settings.GEMINI_MODEL_VISION}, TEXT={settings.GEMINI_MODEL_TEXT}")
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 FORMPILOT_API_KEY = os.getenv("FORMPILOT_API_KEY", "")   # optional tool auth
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./formpilot.db")

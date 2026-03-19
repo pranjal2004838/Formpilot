@@ -29,8 +29,9 @@ class DocumentAnalyzerAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="DocumentAnalyzer")
+        from config.settings import settings
         self.client = genai.Client(api_key=gemini_api_key)
-        self.model_name = "gemini-pro"  # gemini-pro supports vision + text
+        self.model_name = settings.GEMINI_MODEL_VISION  # Auto-detected
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Execute document analysis"""
