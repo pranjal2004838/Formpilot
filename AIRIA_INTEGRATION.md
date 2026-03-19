@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-FormPilot is an **enterprise-grade document-to-form automation pipeline** orchestrated entirely through the **Airia AI platform**. It combines multi-agent AI (Gemini 3 Flash vision + reasoning), **human-in-the-loop governance**, and **multi-system integration** (Slack + Microsoft SharePoint) to reduce 30–60 minutes of manual government form filling to **< 3 seconds**.
+FormPilot is an **enterprise-grade document-to-form automation pipeline** orchestrated entirely through the **Airia AI platform**. It combines multi-agent AI (Gemini 1.5 Flash vision + reasoning), **human-in-the-loop governance**, and **multi-system integration** (Slack + Microsoft SharePoint) to reduce 30–60 minutes of manual government form filling to **< 3 seconds**.
 
 **Key Innovation:** First Airia application to: 
 1. Wrap Python agents as reusable Airia-callable HTTP tools
@@ -297,7 +297,7 @@ SHAREPOINT_CLIENT_ID=app_client_id  # (optional)
 | Metric | Value |
 |--------|-------|
 | **End-to-end latency** | ~2.5s (5x faster than Airia routing solo) |
-| **Document OCR accuracy** | 95%+ (Gemini 3 Flash) |
+| **Document OCR accuracy** | 95%+ (Gemini 1.5 Flash) |
 | **Field mapping confidence** | 92%+ (semantic + fuzzy) |
 | **HITL resolution time** | 5 min (configurable timeout) |
 | **Manual time saved per form** | 30–60 minutes |
@@ -311,8 +311,8 @@ SHAREPOINT_CLIENT_ID=app_client_id  # (optional)
 |-------|-----------|---------|
 | **AI Orchestration** | **Airia Platform** | Multi-agent pipeline coordination, tool registry |
 | **Agents** | Python (async) | 4 specialized agents (OCR, rules, mapping, PDF) |
-| **Vision** | Gemini 3 Flash | Document image analysis |
-| **LLM Reasoning** | Gemini 3 Flash | Eligibility validation, field mapping logic |
+| **Vision** | Gemini 1.5 Flash | Document image analysis |
+| **LLM Reasoning** | Gemini 1.5 Flash | Eligibility validation, field mapping logic |
 | **Infrastructure** | FastAPI + Uvicorn | REST API for Airia tool endpoints |
 | **PDF Generation** | ReportLab | Professional form rendering |
 | **Notifications** | Slack Incoming Webhooks | Real-time status updates |

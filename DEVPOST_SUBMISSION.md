@@ -46,7 +46,7 @@ FormPilot Enterprise is a production-grade multi-agent AI system that automates 
 1. MULTI-SYSTEM INTEGRATION
    • Slack for human-in-the-loop notifications
    • SharePoint for document archival
-   • Gemini 3 Flash for vision-based OCR
+   • Gemini 1.5 Flash for vision-based OCR
    • Browser automation via Playwright
    • Airia Agents for orchestrated workflows
    • Persistent SQLite audit trail
@@ -128,7 +128,7 @@ TECH STACK
 ==========
 Backend:
   • Python 3.12 + FastAPI
-  • Gemini 3 Flash Vision API
+  • Gemini 1.5 Flash Vision API
   • Deterministic rule engine (100+ govregjson rules)
   • Playwright for browser automation
   • SQLite for persistent audit trail
@@ -253,7 +253,7 @@ Track 2 winner: solves real bureaucratic pain for 1.4B annual users.
 ```
 ✅ Python 3.12
 ✅ FastAPI
-✅ Gemini 3 Flash
+✅ Gemini 1.5 Flash
 ✅ SQLite
 ✅ Slack API
 ✅ SharePoint Graph API
