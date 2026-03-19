@@ -2,7 +2,7 @@
 import logging
 from typing import Dict, Any
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
 import json
 
 from agents.base import Agent, AgentInput, AgentOutput
@@ -29,7 +29,7 @@ class RulesValidatorAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="RulesValidator")
-        genai.configure(api_key=gemini_api_key)
+        self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = "gemini-pro"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
@@ -127,9 +127,11 @@ Return ONLY valid JSON (no markdown):
 """
         
         try:
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(prompt)
-            response_text = response.text
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            response_text = self._response_text(response)
             
             # Clean markdown if present
             if "```json" in response_text:

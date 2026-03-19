@@ -1,7 +1,7 @@
 """Agent 3: Field Mapper - Map extracted identity to form fields"""
 import logging
 from typing import Dict, List, Any
-import google.generativeai as genai
+from google import genai
 import json
 
 from agents.base import Agent, AgentInput, AgentOutput
@@ -27,7 +27,7 @@ class FieldMapperAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="FieldMapper")
-        genai.configure(api_key=gemini_api_key)
+        self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = "gemini-pro"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
@@ -153,9 +153,11 @@ Be comprehensive - include all form fields.
 """
         
         try:
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(prompt)
-            response_text = response.text
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            response_text = self._response_text(response)
             
             # Clean markdown if present
             if "```json" in response_text:
