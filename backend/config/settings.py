@@ -66,8 +66,8 @@ class Settings:
     SUPPORTED_IMAGE_FORMATS: list = ["jpg", "jpeg", "png", "pdf", "bmp", "gif", "webp"]
     
     # Gemini API Settings
-    GEMINI_MODEL_VISION: str = "gemini-1.5-flash"
-    GEMINI_MODEL_TEXT: str = "gemini-1.5-flash"
+    GEMINI_MODEL_VISION: str = "gemini-pro-vision"
+    GEMINI_MODEL_TEXT: str = "gemini-pro"
     GEMINI_TEMPERATURE: float = 0.3  # Lower for more consistent results
     GEMINI_MAX_TOKENS: int = 1024
     

@@ -30,7 +30,7 @@ class DocumentAnalyzerAgent(Agent):
     def __init__(self, gemini_api_key: str):
         super().__init__(name="DocumentAnalyzer")
         self.client = genai.Client(api_key=gemini_api_key)
-        self.model_name = "gemini-1.5-flash"
+        self.model_name = "gemini-pro-vision"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
         """Execute document analysis"""

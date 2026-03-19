@@ -16,7 +16,7 @@ name: "FormPilot — Document-to-Form Pipeline"
 version: "2.0.0"
 description: |
   Enterprise multi-agent pipeline that automates government form filling:
-  1. Extracts identity from ID documents using Gemini 1.5 Flash Vision
+  1. Extracts identity from ID documents using Gemini Pro Vision
   2. Validates government eligibility with optional HITL checkpoint
   3. Semantically maps extracted data to target form fields
   4. Generates a professional, submission-ready PDF
@@ -94,7 +94,7 @@ steps:
     tool_endpoint: "/api/tools/document-analyzer"
     description: |
       Extracts structured identity data from uploaded ID documents using
-      Google Gemini 1.5 Flash Vision AI.
+      Google Gemini Pro Vision AI.
       - Supports: Aadhaar, Passport, PAN, Driving Licence, Generic
       - Fields: name, DOB, gender, address, document ID
       - Accuracy: 95%+ with per-field confidence scores
@@ -115,7 +115,7 @@ steps:
     tool_endpoint: "/api/tools/rules-validator"
     description: |
       Validates extracted identity against government eligibility rules using
-      Gemini 1.5 Flash reasoning. Covers India, USA, UK, and Canada.
+      Gemini Pro reasoning. Covers India, USA, UK, and Canada.
       Supports: passport, visa, driver's licence, HR onboarding, compliance.
     inputs:
       profile:  "{{step_1_analyze_document.profile}}"

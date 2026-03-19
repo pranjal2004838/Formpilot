@@ -82,7 +82,7 @@ python -c "
 import os
 from google.generativeai import configure, GenerativeModel
 configure(api_key=os.getenv('GEMINI_API_KEY'))
-model = GenerativeModel('gemini-1.5-flash')
+model = GenerativeModel('gemini-pro-vision')
 response = model.generate_content('Say OK')
 print('✅ Gemini API working:', response.text)
 "
