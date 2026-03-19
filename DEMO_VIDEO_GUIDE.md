@@ -719,7 +719,7 @@ formpilot_demo_audio/
   
   TECH STACK:
   - FastAPI + Python
-  - Gemini 2.0 Flash Vision
+  - Gemini 3 Flash Vision
   - Deterministic rule engine
   - SQLite persistent audit trail
   - Slack Block Kit

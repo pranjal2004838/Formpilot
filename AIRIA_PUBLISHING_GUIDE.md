@@ -114,7 +114,7 @@ Airia will show a **"Publish Settings"** form:
 Enterprise-grade multi-agent pipeline that automates government form filing.
 
 WHAT IT DOES:
-✅ Extracts identity from ID documents using Gemini 2.0 Flash Vision (94% accuracy)
+✅ Extracts identity from ID documents using Gemini 3 Flash Vision (94% accuracy)
 ✅ Validates government eligibility with 100+ deterministic compliance rules
 ✅ Maps extracted data to target form fields using semantic intelligence (89% accuracy)
 ✅ Generates professional, submission-ready PDFs
@@ -130,7 +130,7 @@ PERFORMANCE:
 INTEGRATIONS:
 • Slack Block Kit for real-time notifications
 • Microsoft SharePoint for document archival
-• Google Gemini 2.0 Flash for vision + reasoning
+• Google Gemini 3 Flash for vision + reasoning
 • Playwright for browser automation
 • SQLite for persistent audit trails
 

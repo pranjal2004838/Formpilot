@@ -39,7 +39,7 @@ AIRIA_PIPELINE_DEFINITION: Dict[str, Any] = {
             "icon": "🔍",
             "agent": "FormPilot/DocumentAnalyzer",
             "tool_endpoint": "/api/tools/document-analyzer",
-            "description": "Extract structured identity using Gemini 2.0 Flash Vision",
+            "description": "Extract structured identity using Gemini 3 Flash Vision",
             "hitl": False,
         },
         {
