@@ -3,8 +3,7 @@ import json
 import base64
 import logging
 from typing import Dict, Any
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from datetime import datetime
 
 from agents.base import Agent, AgentInput, AgentOutput
@@ -29,7 +28,7 @@ class DocumentAnalyzerAgent(Agent):
     
     def __init__(self, gemini_api_key: str):
         super().__init__(name="DocumentAnalyzer")
-        self.client = genai.Client(api_key=gemini_api_key)
+        genai.configure(api_key=gemini_api_key)
         self.model_name = "gemini-pro-vision"
     
     async def execute(self, input_data: AgentInput) -> AgentOutput:
@@ -106,16 +105,20 @@ class DocumentAnalyzerAgent(Agent):
         prompt = self._get_extraction_prompt(doc_type)
         
         try:
-            # Call Gemini Vision API
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=[
-                    prompt,
-                    types.Part.from_bytes(data=image_bytes, mime_type=self._detect_mime_type(image_bytes)),
-                ],
-            )
+            # Create model and prepare image
+            model = genai.GenerativeModel(self.model_name)
+            mime_type = self._detect_mime_type(image_bytes)
+            
+            # Call Gemini Vision API with image
+            response = model.generate_content([
+                prompt,
+                {
+                    'mime_type': mime_type,
+                    'data': base64.standard_b64encode(image_bytes).decode('utf-8')
+                }
+            ])
 
-            response_text = self._response_text(response)
+            response_text = response.text
             
             # Clean markdown wrapping if present
             if "```json" in response_text:
