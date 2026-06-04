@@ -2,7 +2,7 @@
 FormPilot Enterprise API — FastAPI Application
 ================================================
 Main entry point.  Serves the frontend SPA, exposes the workflow API,
-Airia-callable tool endpoints, HITL approval routes, and integration status.
+Orchestrator-callable tool endpoints, HITL approval routes, and integration status.
 """
 
 import asyncio
@@ -55,7 +55,7 @@ if not GEMINI_API_KEY:
 # ---------------------------------------------------------------------------
 # Integration clients (imported lazily to avoid circular import)
 # ---------------------------------------------------------------------------
-from integrations.airia_client import AiriaClient
+from integrations.orchestrator_client import OrchestratorClient
 from integrations.slack_client import SlackClient
 from integrations.sharepoint_client import SharePointClient
 from agents.agent_5_browser_submitter import BrowserSubmissionAgent
@@ -63,8 +63,10 @@ from compliance.rule_engine import SUPPORTED_DOCUMENTS, evaluate_compliance
 from storage.workflow_store import WorkflowStore
 from utils.form_mapping import map_profile_to_form_fields
 from workflows.form_automation_workflow import FormAutomationWorkflow
+from workflows.entity_resolution import EntityResolutionEngine
+from models.schemas import BulkUploadResponse, EmployeeProfile, CompanyAccount
 
-airia_client     = AiriaClient()
+orchestrator_client = OrchestratorClient()
 slack_client     = SlackClient()
 sharepoint_client = SharePointClient()
 browser_submitter = BrowserSubmissionAgent()
@@ -75,7 +77,7 @@ workflow = (
         gemini_api_key=GEMINI_API_KEY,
         slack_client=slack_client,
         sharepoint_client=sharepoint_client,
-        airia_client=airia_client,
+        orchestrator_client=orchestrator_client,
     )
     if GEMINI_API_KEY
     else None
@@ -87,8 +89,7 @@ workflow = (
 app = FastAPI(
     title="FormPilot Enterprise API",
     description=(
-        "AI-powered multi-agent form automation — Airia AI Agents Hackathon 2026. "
-        "Track 2: Active Agents."
+        "AI-powered multi-agent form automation — FlowZint AI Hackathon 2026."
     ),
     version="2.0.0",
     docs_url="/docs",
@@ -132,6 +133,7 @@ def _make_state(workflow_id: str) -> Dict[str, Any]:
         "pdf_file_name": None,
         "slack_sent": False,
         "sharepoint_url": None,
+        "orchestrator_invoked": False,
         "airia_invoked": False,
         "errors": [],
         "audit_log": [],
@@ -635,7 +637,8 @@ async def health_check():
         "version": "2.0.0",
         "gemini_configured": GEMINI_API_KEY is not None,
         "browser_automation_available": browser_submitter.available,
-        "airia_configured":  airia_client.configured,
+        "orchestrator_configured": orchestrator_client.configured,
+        "airia_configured":  orchestrator_client.configured,
         "slack_configured":  slack_client.configured,
         "sharepoint_configured": sharepoint_client.configured,
         "tool_auth_enforced": bool(FORMPILOT_API_KEY),
@@ -736,7 +739,7 @@ async def demo_capabilities():
         ],
         "agent_pipeline": {
             "agents": 5,
-            "orchestration": "Async/Await with Airia Platform Integration",
+            "orchestration": "Async/Await with Orchestrator Platform Integration",
             "agents_detail": [
                 {
                     "agent": 1,
@@ -779,7 +782,7 @@ async def demo_capabilities():
             "Form submission policy enforcement (GET vs POST, domain restrictions)"
         ],
         "integrations": {
-            "airia": "✅ Full orchestration support",
+            "orchestrator": "✅ Full orchestration support",
             "slack": "✅ Notifications + HITL buttons",
             "sharepoint": "✅ Results upload",
             "railway": "✅ Deployment ready"
@@ -793,10 +796,15 @@ async def demo_capabilities():
 async def integrations_status():
     """Return live status of all platform integrations."""
     return {
+        "orchestrator": {
+            "configured": orchestrator_client.configured,
+            "pipeline_id": orchestrator_client.pipeline_id if orchestrator_client.configured else None,
+            "label": "Orchestrator AI Platform",
+        },
         "airia": {
-            "configured": airia_client.configured,
-            "pipeline_id": airia_client.pipeline_id if airia_client.configured else None,
-            "label": "Airia AI Platform",
+            "configured": orchestrator_client.configured,
+            "pipeline_id": orchestrator_client.pipeline_id if orchestrator_client.configured else None,
+            "label": "Orchestrator AI Platform",
         },
         "slack": {
             "configured": slack_client.configured,
@@ -821,17 +829,31 @@ async def integrations_status():
     }
 
 
-@app.get("/api/airia/pipeline", tags=["Airia"])
-async def get_airia_pipeline():
-    """Return the Airia pipeline definition for this application."""
-    return airia_client.pipeline_definition
+@app.get("/api/orchestrator/pipeline", tags=["Orchestration"])
+async def get_orchestrator_pipeline():
+    """Return the Orchestrator pipeline definition for this application."""
+    return orchestrator_client.pipeline_definition
 
 
-@app.get("/api/airia/tools", tags=["Airia"])
-async def get_airia_tool_manifest(request: Request):
-    """Return the Airia-compatible tool manifest (for registration in Airia Community)."""
+@app.get("/api/orchestrator/tools", tags=["Orchestration"])
+async def get_orchestrator_tool_manifest(request: Request):
+    """Return the Orchestrator-compatible tool manifest."""
     base = str(request.base_url).rstrip("/")
-    return airia_client.get_tool_manifest(base)
+    return orchestrator_client.get_tool_manifest(base)
+
+
+@app.get("/api/pipeline/config", tags=["Orchestration"])
+async def get_pipeline_config():
+    """Return the general pipeline config/definition for this application."""
+    return orchestrator_client.pipeline_definition
+
+
+@app.get("/api/pipeline/tools", tags=["Orchestration"])
+async def get_pipeline_tool_manifest(request: Request):
+    """Return the orchestration-compatible tool manifest."""
+    base = str(request.base_url).rstrip("/")
+    return orchestrator_client.get_tool_manifest(base)
+
 
 
 # ===========================================================================
@@ -929,7 +951,8 @@ async def get_workflow_status(workflow_id: str):
             "message": stored.get("message"),
             "slack_sent": stored.get("slack_sent", False),
             "sharepoint_url": stored.get("sharepoint_url"),
-            "airia_invoked": stored.get("airia_invoked", False),
+            "orchestrator_invoked": stored.get("orchestrator_invoked", stored.get("airia_invoked", False)),
+            "airia_invoked": stored.get("orchestrator_invoked", stored.get("airia_invoked", False)),
             "errors": stored.get("errors", []),
             "mode": stored.get("mode", "real"),
         }
@@ -943,7 +966,8 @@ async def get_workflow_status(workflow_id: str):
         "message": state["message"],
         "slack_sent": state["slack_sent"],
         "sharepoint_url": state["sharepoint_url"],
-        "airia_invoked": state["airia_invoked"],
+        "orchestrator_invoked": state.get("orchestrator_invoked", state.get("airia_invoked", False)),
+        "airia_invoked": state.get("orchestrator_invoked", state.get("airia_invoked", False)),
         "errors": state["errors"],
         "mode": state.get("mode", "real"),
     }
@@ -1182,13 +1206,13 @@ async def resume_browser_interaction_get(workflow_id: str):
 
 
 # ===========================================================================
-# Airia Tool Endpoints
-# These are called by the Airia platform during pipeline execution.
+# Orchestration Tool Endpoints
+# These can be called by the Orchestrator platform during pipeline execution.
 # They wrap each FormPilot agent as a standalone HTTP tool.
 # ===========================================================================
-@app.post("/api/tools/document-analyzer", tags=["Airia Tools"])
+@app.post("/api/tools/document-analyzer", tags=["Orchestration Tools"])
 async def tool_document_analyzer(body: Dict[str, Any], request: Request):
-    """Airia tool: Extract identity from a document image."""
+    """Orchestrator tool: Extract identity from a document image."""
     _enforce_tool_auth(request)
     if not workflow:
         raise HTTPException(503, detail="Gemini not configured.")
@@ -1205,9 +1229,9 @@ async def tool_document_analyzer(body: Dict[str, Any], request: Request):
     return {"profile": result.data.get("profile", result.data), "confidence": result.confidence}
 
 
-@app.post("/api/tools/rules-validator", tags=["Airia Tools"])
+@app.post("/api/tools/rules-validator", tags=["Orchestration Tools"])
 async def tool_rules_validator(body: Dict[str, Any], request: Request):
-    """Airia tool: Validate identity against government eligibility rules."""
+    """Orchestrator tool: Validate identity against government eligibility rules."""
     _enforce_tool_auth(request)
     if not workflow:
         raise HTTPException(503, detail="Gemini not configured.")
@@ -1226,9 +1250,9 @@ async def tool_rules_validator(body: Dict[str, Any], request: Request):
     return {"validation": result.data, "confidence": result.confidence}
 
 
-@app.post("/api/tools/field-mapper", tags=["Airia Tools"])
+@app.post("/api/tools/field-mapper", tags=["Orchestration Tools"])
 async def tool_field_mapper(body: Dict[str, Any], request: Request):
-    """Airia tool: Semantically map identity data to form fields."""
+    """Orchestrator tool: Semantically map identity data to form fields."""
     _enforce_tool_auth(request)
     if not workflow:
         raise HTTPException(503, detail="Gemini not configured.")
@@ -1245,9 +1269,9 @@ async def tool_field_mapper(body: Dict[str, Any], request: Request):
     return {"mappings": result.data.get("mappings", []), "confidence": result.confidence}
 
 
-@app.post("/api/tools/pdf-generator", tags=["Airia Tools"])
+@app.post("/api/tools/pdf-generator", tags=["Orchestration Tools"])
 async def tool_pdf_generator(body: Dict[str, Any], request: Request):
-    """Airia tool: Generate a professional PDF from mapped fields."""
+    """Orchestrator tool: Generate a professional PDF from mapped fields."""
     _enforce_tool_auth(request)
     from agents.agent_4_pdf_generator import PDFGeneratorAgent
     from agents.base import AgentInput
@@ -1269,9 +1293,9 @@ async def tool_pdf_generator(body: Dict[str, Any], request: Request):
     }
 
 
-@app.post("/api/tools/notification-dispatcher", tags=["Airia Tools"])
+@app.post("/api/tools/notification-dispatcher", tags=["Orchestration Tools"])
 async def tool_notification_dispatcher(body: Dict[str, Any], request: Request):
-    """Airia tool: Send Slack notification and upload PDF to SharePoint."""
+    """Orchestrator tool: Send Slack notification and upload PDF to SharePoint."""
     _enforce_tool_auth(request)
     wf_id = body.get("workflow_id", str(uuid.uuid4()))
     profile = body.get("profile", {})
@@ -1362,7 +1386,7 @@ async def demo_workflow():
     return {
         "workflow_id": str(uuid.uuid4()),
         "status": "completed",
-        "message": "Demo workflow completed — Airia 5-step pipeline (local mode)",
+        "message": "Demo workflow completed — 5-step orchestrator pipeline (local mode)",
         "profile": demo_profile,
         "validation": demo_validation,
         "mappings": demo_mappings,
@@ -1370,6 +1394,7 @@ async def demo_workflow():
         "pdf_base64": pdf_result.data.get("pdf_base64", ""),
         "slack_sent": False,
         "sharepoint_url": None,
+        "orchestrator_invoked": False,
         "airia_invoked": False,
         "demo": True,
     }
@@ -1494,13 +1519,13 @@ async def judge_readiness(request: Request):
     routes = {r.path for r in app.routes}
     checks = [
         {
-            "name": "Airia pipeline endpoint",
-            "passed": "/api/airia/pipeline" in routes,
+            "name": "Orchestrator pipeline endpoint",
+            "passed": "/api/orchestrator/pipeline" in routes,
             "weight": 10,
         },
         {
-            "name": "Airia tool manifest endpoint",
-            "passed": "/api/airia/tools" in routes,
+            "name": "Orchestrator tool manifest endpoint",
+            "passed": "/api/orchestrator/tools" in routes,
             "weight": 10,
         },
         {
@@ -1561,7 +1586,7 @@ async def judge_readiness(request: Request):
         },
         {
             "name": "Multi-system integrations declared",
-            "passed": bool(airia_client.pipeline_definition.get("integrations")),
+            "passed": bool(orchestrator_client.pipeline_definition.get("integrations")),
             "weight": 5,
         },
     ]
@@ -1658,6 +1683,86 @@ async def get_supported_countries():
 async def _global_exception_handler(request: Request, exc: Exception):
     logger.error("Uncaught exception: %s", exc, exc_info=True)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+# ===========================================================================
+# Bulk Entity Resolution & Enterprise Grouping
+# ===========================================================================
+
+class BulkUploadRequest(BaseModel):
+    account_id: Optional[str] = None
+    account_name: str = "Enterprise Org"
+    documents: List[WorkflowStartRequest]
+
+@app.post("/api/bulk/upload", response_model=BulkUploadResponse, tags=["Bulk Operations"])
+async def bulk_upload_documents(request: BulkUploadRequest, background_tasks: BackgroundTasks):
+    """
+    Simulates bulk uploading of documents (e.g. Aadhaar, PAN, DL) for an entire company.
+    This runs Entity Resolution to extract basic identifiers and group documents by person.
+    """
+    account_id = workflow_store.create_company_account(
+        name=request.account_name, 
+        account_id=request.account_id
+    )
+
+    # 1. Start all workflows
+    extracted_data = []
+    for doc_req in request.documents:
+        workflow_id = str(uuid.uuid4())
+        
+        # We start by persisting an initial state
+        state = _make_state(workflow_id)
+        state.update({
+            "status": "running",
+            "step": 1,
+            "step_name": "Bulk Ingestion",
+            "message": "Queued for bulk extraction..."
+        })
+        workflow_states[workflow_id] = state
+        _persist_workflow_state(workflow_id, doc_req.model_dump())
+        
+        # For a hackathon demo, we will do a fast simulated extraction of Name/DOB to group them
+        # In real production, this would wait for the DocumentAnalyzer to complete.
+        profile = _simulated_profile(doc_req.document_type, doc_req.country)
+        
+        extracted_data.append({
+            "workflow_id": workflow_id,
+            "extracted_name": profile["fullName"]["value"],
+            "extracted_dob": profile["dob"]["value"],
+            "type": doc_req.document_type
+        })
+        
+        # Queue the actual background workflow
+        background_tasks.add_task(_run_workflow_bg if GEMINI_API_KEY else _run_simulated_bg, workflow_id, doc_req.model_dump())
+
+    # 2. Run Entity Resolution grouping
+    resolution_engine = EntityResolutionEngine(workflow_store)
+    profiles = resolution_engine.resolve_and_group(account_id, extracted_data)
+
+    return BulkUploadResponse(
+        account_id=account_id,
+        processed_files=len(request.documents),
+        profiles_created=len(profiles),
+        profiles=[
+            EmployeeProfile(
+                profile_id=p["profile_id"],
+                account_id=account_id,
+                full_name=p["name"],
+                dob=p.get("dob"),
+                status="incomplete",
+                created_at=datetime.now(),
+                documents=p.get("documents", [])
+            ) for p in profiles
+        ],
+        message=f"Successfully processed {len(request.documents)} documents into {len(profiles)} employee profiles."
+    )
+
+
+@app.get("/api/bulk/profiles/{account_id}", tags=["Bulk Operations"])
+async def get_account_profiles(account_id: str):
+    """Get all employee profiles and their linked documents for a given company account."""
+    profiles = workflow_store.get_company_profiles(account_id)
+    return {"account_id": account_id, "profiles": profiles}
 
 
 # ===========================================================================

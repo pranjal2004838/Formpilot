@@ -172,7 +172,7 @@ Just instant, human-in-the-loop decision making in the tool your team already us
 
 But FormPilot isn't just one workflow. It's an ecosystem.
 
-It connects to Slack for governance. SharePoint for document management. Browser automation for direct form submission. Airia for multi-agent orchestration.
+It connects to Slack for governance. SharePoint for document management. Browser automation for direct form submission. FormPilot Engine for multi-agent orchestration.
 
 Our benchmarks? We've tested it against 100 synthetic government applications. The completion rate: 89 percent. Average time per application: 90 seconds.
 

@@ -1,15 +1,9 @@
 # ============================================================
-# FormPilot — Airia AI Pipeline Configuration
+# FormPilot — Multi-Agent Pipeline Configuration
 # ============================================================
-# Deploy this pipeline to the Airia Community platform:
-#   1. Log in to app.airia.io
-#   2. Go to Pipelines → Import YAML
-#   3. Paste this configuration
-#   4. Register the ENV variables below
-#   5. Publish to Airia Community
-#
-# Community URL (once published): https://community.airia.io/FormPilot
-# Track: Track 2 — Active Agents | Airia AI Agents Hackathon 2026
+# Deploy this pipeline to your orchestration engine:
+#   1. Configure the pipeline routes and inputs below
+#   2. Register the ENV variables
 # ============================================================
 
 name: "FormPilot — Document-to-Form Pipeline"
@@ -28,8 +22,6 @@ description: |
 author: "FormPilot Team"
 tags: [enterprise, document-automation, form-filling, government, HR, compliance, HITL]
 category: "Document Processing & Automation"
-track: "Track 2: Active Agents"
-hackathon: "Airia AI Agents Hackathon 2026"
 
 # ============================================================
 # INPUTS
@@ -234,7 +226,7 @@ integrations:
     description:   "PDF storage via Microsoft Graph API (OAuth2 client-credentials)"
 
 # ============================================================
-# TOOL DEFINITIONS  (Airia tool registry)
+# TOOL DEFINITIONS  (Engine tool registry)
 # ============================================================
 tools:
   FormPilot/DocumentAnalyzer:
@@ -296,14 +288,10 @@ environment:
       description: "Google Gemini API key (get free at aistudio.google.com)"
 
   optional:
-    AIRIA_API_KEY:
-      description: "Airia platform API key"
-    AIRIA_PIPELINE_ID:
-      description: "Airia pipeline ID for this deployment"
     FORMPILOT_API_URL:
       description: "Base URL of this FormPilot API (e.g. https://formpilot.up.railway.app)"
     FORMPILOT_API_KEY:
-      description: "API key for Airia tool authentication"
+      description: "API key for tool authentication"
     SLACK_WEBHOOK_URL:
       description: "Slack Incoming Webhook URL"
     SLACK_CHANNEL:

@@ -9,10 +9,8 @@
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-**Airia AI Agents Hackathon 2026 - Track 2: Active Agents**
-
 Production-grade pipeline with:
-**Airia orchestration + deterministic compliance + HITL governance + Slack + SharePoint + persistent audit trail**
+**Autonomous Multi-Agent Orchestration Engine + deterministic compliance + HITL governance + Slack + SharePoint + persistent audit trail**
 
 </div>
 
@@ -81,7 +79,7 @@ No personal data was used. These demo inputs are generated assets committed in t
 
 ## Feature Coverage Checklist
 
-- [x] Airia-ready 5-step pipeline definition and tool manifest
+- [x] Multi-agent 5-step pipeline definition and tool manifest
 - [x] Multi-agent backend (Analyzer, Validator, Mapper, PDF)
 - [x] Deterministic compliance engine (Aadhaar/GST/vehicle/property)
 - [x] HITL approval/reject workflow with timeout behavior
@@ -113,7 +111,7 @@ Core modules:
 - backend/workflows/form_automation_workflow.py
 - backend/compliance/rule_engine.py
 - backend/storage/workflow_store.py
-- backend/integrations/airia_client.py
+- backend/integrations/orchestrator_client.py
 - backend/integrations/slack_client.py
 - backend/integrations/sharepoint_client.py
 
@@ -141,8 +139,8 @@ Minimum required for real model execution:
 
 Optional integrations:
 
-- AIRIA_API_KEY
-- AIRIA_PIPELINE_ID
+- ORCHESTRATOR_API_KEY
+- ORCHESTRATOR_PIPELINE_ID
 - SLACK_WEBHOOK_URL
 - SHAREPOINT_TENANT_ID
 - SHAREPOINT_CLIENT_ID
@@ -175,8 +173,10 @@ Open:
 - GET /api/compliance/case-study
 - GET /api/judge/readiness
 - GET /api/integrations/status
-- GET /api/airia/pipeline
-- GET /api/airia/tools
+- GET /api/orchestrator/pipeline
+- GET /api/orchestrator/tools
+- GET /api/pipeline/config
+- GET /api/pipeline/tools
 
 ---
 
@@ -212,7 +212,7 @@ Current result: **9 passed**.
 
 ---
 
-## Hackathon Positioning Statement
+## Enterprise Positioning Statement
 
 FormPilot demonstrates a complete active-agent product loop, not just model inference:
 
@@ -223,7 +223,7 @@ FormPilot demonstrates a complete active-agent product loop, not just model infe
 - Integrations for enterprise delivery channels
 - Persistent compliance and audit metadata
 
-This is ready to demo in front of judges as a credible enterprise automation system.
+This is ready to deploy as a highly credible enterprise automation system.
 
 ---
 

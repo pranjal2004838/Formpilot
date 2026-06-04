@@ -70,6 +70,28 @@ class WorkflowStore:
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS company_accounts (
+                    account_id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    created_at TEXT
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS employee_profiles (
+                    profile_id TEXT PRIMARY KEY,
+                    account_id TEXT NOT NULL,
+                    full_name TEXT NOT NULL,
+                    dob TEXT,
+                    created_at TEXT,
+                    status TEXT DEFAULT 'incomplete',
+                    FOREIGN KEY (account_id) REFERENCES company_accounts(account_id)
+                )
+                """
+            )
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS workflow_audit (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     workflow_id TEXT NOT NULL,
@@ -92,6 +114,7 @@ class WorkflowStore:
         self._ensure_column("workflows", "risk_level", "TEXT")
         self._ensure_column("workflows", "failed_checks", "INTEGER DEFAULT 0")
         self._ensure_column("workflows", "regulation_tags", "TEXT")
+        self._ensure_column("workflows", "profile_id", "TEXT")
 
     def _ensure_column(self, table_name: str, column_name: str, column_type: str) -> None:
         with self._connect() as conn:
@@ -154,7 +177,7 @@ class WorkflowStore:
             "pdf_file_name": state.get("pdf_file_name"),
             "slack_sent": state.get("slack_sent", False),
             "sharepoint_url": state.get("sharepoint_url"),
-            "airia_invoked": state.get("airia_invoked", False),
+            "airia_invoked": state.get("orchestrator_invoked", state.get("airia_invoked", False)),
             "mode": state.get("mode", "real"),
             "errors": errors,
             "message": state.get("message"),
@@ -169,9 +192,9 @@ class WorkflowStore:
                     document_type, country, app_type, airia_invoked, slack_sent,
                     sharepoint_url, pdf_file_name, created_at, completed_at,
                     duration_ms, compliance_score, risk_level, failed_checks,
-                    regulation_tags, error_text, result_json, audit_count
+                    regulation_tags, error_text, result_json, audit_count, profile_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(workflow_id) DO UPDATE SET
                     status = excluded.status,
                     step = excluded.step,
@@ -193,7 +216,8 @@ class WorkflowStore:
                     regulation_tags = excluded.regulation_tags,
                     error_text = excluded.error_text,
                     result_json = excluded.result_json,
-                    audit_count = excluded.audit_count
+                    audit_count = excluded.audit_count,
+                    profile_id = COALESCE(workflows.profile_id, excluded.profile_id)
                 """,
                 (
                     workflow_id,
@@ -205,7 +229,7 @@ class WorkflowStore:
                     request_meta.get("document_type") or state.get("document_type"),
                     request_meta.get("country") or state.get("country"),
                     request_meta.get("app_type") or state.get("app_type"),
-                    int(bool(state.get("airia_invoked", False))),
+                    int(bool(state.get("orchestrator_invoked", state.get("airia_invoked", False)))),
                     int(bool(state.get("slack_sent", False))),
                     state.get("sharepoint_url"),
                     state.get("pdf_file_name"),
@@ -219,6 +243,7 @@ class WorkflowStore:
                     error_text,
                     result_json,
                     len(state.get("audit_log") or []),
+                    state.get("profile_id")
                 ),
             )
 
@@ -549,3 +574,70 @@ class WorkflowStore:
             "recent_workflows": recent_workflows,
             "generated_at": datetime.now().isoformat(),
         }
+
+    # --- Bulk & Entity Resolution Methods ---
+
+    def create_company_account(self, name: str, account_id: Optional[str] = None) -> str:
+        """Create a new company account."""
+        import uuid
+        if not account_id:
+            account_id = str(uuid.uuid4())
+        
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO company_accounts (account_id, name, created_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(account_id) DO NOTHING
+                """,
+                (account_id, name, datetime.now().isoformat())
+            )
+        return account_id
+
+    def create_employee_profile(self, account_id: str, full_name: str, dob: Optional[str] = None, profile_id: Optional[str] = None) -> str:
+        """Create a new employee profile under an account."""
+        import uuid
+        if not profile_id:
+            profile_id = str(uuid.uuid4())
+            
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO employee_profiles (profile_id, account_id, full_name, dob, created_at, status)
+                VALUES (?, ?, ?, ?, ?, 'incomplete')
+                ON CONFLICT(profile_id) DO NOTHING
+                """,
+                (profile_id, account_id, full_name, dob, datetime.now().isoformat())
+            )
+        return profile_id
+
+    def get_company_profiles(self, account_id: str) -> List[Dict[str, Any]]:
+        """Get all employee profiles and their associated workflows for a company account."""
+        with self._connect() as conn:
+            profiles = conn.execute(
+                """
+                SELECT profile_id, full_name, dob, created_at, status
+                FROM employee_profiles
+                WHERE account_id = ?
+                """,
+                (account_id,)
+            ).fetchall()
+            
+            result = []
+            for profile in profiles:
+                p_dict = dict(profile)
+                
+                # Fetch related workflows
+                workflows = conn.execute(
+                    """
+                    SELECT workflow_id, document_type, status, compliance_score
+                    FROM workflows
+                    WHERE profile_id = ?
+                    """,
+                    (p_dict["profile_id"],)
+                ).fetchall()
+                
+                p_dict["documents"] = [dict(w) for w in workflows]
+                result.append(p_dict)
+                
+        return result

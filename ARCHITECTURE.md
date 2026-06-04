@@ -1,31 +1,30 @@
-# FormPilot — Airia AI Agents Hackathon Track 2
+# FormPilot — Autonomous Multi-Agent Orchestration Engine
 ## Active Multi-Agent Orchestration with HITL Governance
 
-**Submission for:** Airia AI Agents Hackathon 2026 — Track 2: Active Agents  
 **Status:** ✅ Production Ready (March 16, 2026)
 
 ---
 
 ## 1. Executive Summary
 
-FormPilot is an **enterprise-grade document-to-form automation pipeline** orchestrated entirely through the **Airia AI platform**. It combines multi-agent AI (Gemini Pro vision + reasoning), **human-in-the-loop governance**, and **multi-system integration** (Slack + Microsoft SharePoint) to reduce 30–60 minutes of manual government form filling to **< 3 seconds**.
+FormPilot is an **enterprise-grade document-to-form automation pipeline** orchestrated entirely through an **Autonomous Multi-Agent Orchestration Engine**. It combines multi-agent AI (Gemini Pro vision + reasoning), **human-in-the-loop governance**, and **multi-system integration** (Slack + Microsoft SharePoint) to reduce 30–60 minutes of manual government form filling to **< 3 seconds**.
 
-**Key Innovation:** First Airia application to: 
-1. Wrap Python agents as reusable Airia-callable HTTP tools
-2. Implement HITL governance that pauses/resumes workflows based on eligibility
-3. Dispatch to enterprise platforms (Slack, SharePoint) from Airia orchestration
+**Key Innovation:**
+1. Wrap Python agents as reusable engine-callable HTTP tools.
+2. Implement HITL governance that pauses/resumes workflows based on eligibility.
+3. Dispatch to enterprise platforms (Slack, SharePoint) from engine orchestration.
 
 ---
 
-## 2. Airia Integration Architecture
+## 2. Orchestration Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      FORMUPILOT FRONTEND (Browser)              │
+│                      FORMPILOT FRONTEND (Browser)              │
 │  • Form upload with metadata (country, doc type, app type)      │
 │  • Real-time progress polling (1.2s intervals)                  │
 │  • HITL modal (5-min approval countdown, Approve/Reject buttons)│
-│  • Results display (Slack sent? SharePoint URL? Airia invoked?) │
+│  • Results display (Slack sent? SharePoint URL? Engine invoked?)│
 └──────────────────────────┬──────────────────────────────────────┘
                            │ POST /api/workflows/start
                            └──────────────────────────┐
@@ -39,13 +38,13 @@ FormPilot is an **enterprise-grade document-to-form automation pipeline** orches
                                             │
                     ┌───────────────────────┴───────────────────────┐
                     │                                               │
-                    ▼ (if AIRIA_API_KEY set)                       ▼ (fallback local)
+                    ▼ (if engine routing enabled)                   ▼ (fallback local)
      ┌──────────────────────────────────┐      ┌─────────────────────────┐
-     │   AIRIA ORCHESTRATION LAYER      │      │  Python Agent Execution │
-     │   (app.airia.io)                 │      └─────────────────────────┘
+     │      ORCHESTRATION LAYER         │      │  Python Agent Execution │
+     │      (FormPilot Engine)          │      └─────────────────────────┘
      │                                  │
      │  pipeline_id = FormPilot v2      │
-     │  • 5-step YAML DAG               │
+     │  • 5-step Orchestrated DAG       │
      │  • Tools: /api/tools/{name}      │
      │  • HITL trigger if eligible==F   │
      └────┬─────────────────┬─────────┬─────┘
@@ -77,13 +76,13 @@ FormPilot is an **enterprise-grade document-to-form automation pipeline** orches
 
 ---
 
-## 3. 5-Step Pipeline (Airia YAML Definition)
+## 3. 5-Step Pipeline Definition
 
-Defined in `airia_pipeline_config.yaml`:
+Defined in `pipeline_config.yaml`:
 
 | Step | Name | Tool | Purpose | Input | Output |
 |------|------|------|---------|-------|--------|
-| **0** | Airia Router | Logic | Try Airia first; fallback local | Config | Route decision |
+| **0** | Orchestration Router | Logic | Try engine first; fallback local | Config | Route decision |
 | **1** | Document Analyzer | Gemini Vision | Extract identity fields | Image base64 | `profile` (name, DOB, address, etc.) |
 | **2** | Rules Validator | Gemini LLM | Check eligibility (country-specific rules) | Profile + Country | `validation` (eligible: yes/no, errors) |
 | **2b** | **→ HITL Governor** | **asyncio.Event** | **If ineligible: pause, send Slack, wait for human decision** | **Validation failure** | **Resume or reject** |
@@ -91,13 +90,13 @@ Defined in `airia_pipeline_config.yaml`:
 | **4** | PDF Generator | ReportLab | Render as professional PDF | Mappings + Profile | `pdf_base64` + `file_name` |
 | **5** | Notification Dispatcher | Slack/Graph | Send Slack + upload SharePoint | PDF + Profile | Notifications sent, URL |
 
-**Total execution time:** ~2.5 seconds (Airia routing + agent chains) vs 30–60 minutes manual
+**Total execution time:** ~2.5 seconds (Engine routing + agent chains) vs 30–60 minutes manual
 
 ---
 
-## 4. Tool Definitions (Airia Registry)
+## 4. Tool Definitions (Engine Registry)
 
-FormPilot exposes **5 HTTP tools** for Airia to call:
+FormPilot exposes **5 HTTP tools** for the engine to call:
 
 ```yaml
 POST /api/tools/document-analyzer
@@ -124,12 +123,12 @@ POST /api/tools/notification-dispatcher
 All tools are:
 - ✅ **Async-capable** (FastAPI + httpx)
 - ✅ **Bearer token authenticated** (via `FORMPILOT_API_KEY`)
-- ✅ **Fully documented** in OpenAPI schema at `GET /api/airia/tools`
-- ✅ **Fallback-safe** (degrade gracefully if Airia unreachable)
+- ✅ **Fully documented** in OpenAPI schema at `GET /api/tools`
+- ✅ **Fallback-safe** (degrade gracefully if orchestration engine unreachable)
 
 ---
 
-## 5. HITL Governance (Track 2 Requirement)
+## 5. HITL Governance
 
 **The Problem:** Some applicants fail eligibility checks but may have extenuating circumstances (visa extensions, spouse documentation, etc.).
 
@@ -242,15 +241,10 @@ sharepoint_client.upload_pdf(
 
 ---
 
-## 8. Deployment Guide (Airia Community)
+## 8. Deployment Guide
 
-### Step 1: Create FormPilot Airia Pipeline
-1. Log into [app.airia.io](https://app.airia.io)
-2. Go to **Pipelines → Import YAML**
-3. Paste contents of `airia_pipeline_config.yaml`
-4. Set name: `FormPilot — Document-to-Form Pipeline`
-5. Set public visibility: `Public (Airia Community)`
-6. **Publish**
+### Step 1: Configure FormPilot Pipeline
+Configure the pipeline options in `pipeline_config.yaml` to specify the orchestration routes, tool endpoints, and required environment parameters.
 
 ### Step 2: Deploy FormPilot API
 ```bash
@@ -271,11 +265,9 @@ cd backend
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### Step 3: Configure Airia Pipeline
-In Airia app, set environment variables:
+### Step 3: Configure Environment Pipeline
+In your application environment, set environment variables:
 ```bash
-AIRIA_API_KEY=your_airia_api_key
-AIRIA_PIPELINE_ID=pipeline_id_from_step_1
 FORMPILOT_API_URL=https://formpilot-[random].up.railway.app
 FORMPILOT_API_KEY=generate_a_random_string
 SLACK_WEBHOOK_URL=https://hooks.slack.com/...  # (optional)
@@ -284,24 +276,18 @@ SHAREPOINT_CLIENT_ID=app_client_id  # (optional)
 # ... etc (see .env.example for complete list)
 ```
 
-### Step 4: Submit to Airia Community
-1. Go to Airia Community → Submit Application
-2. Link to: `https://formpilot-[random].up.railway.app`
-3. Track: **Track 2 — Active Agents**
-4. Description: Copy from this document
-
 ---
 
 ## 9. Performance & Metrics
 
 | Metric | Value |
 |--------|-------|
-| **End-to-end latency** | ~2.5s (5x faster than Airia routing solo) |
+| **End-to-end latency** | ~2.5s (stateless orchestrator) |
 | **Document OCR accuracy** | 95%+ (Gemini Pro) |
 | **Field mapping confidence** | 92%+ (semantic + fuzzy) |
 | **HITL resolution time** | 5 min (configurable timeout) |
 | **Manual time saved per form** | 30–60 minutes |
-| **Scalability (agents)** | Stateless; horizontal auto-scale via Airia |
+| **Scalability (agents)** | Stateless; horizontal auto-scale |
 
 ---
 
@@ -309,68 +295,17 @@ SHAREPOINT_CLIENT_ID=app_client_id  # (optional)
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **AI Orchestration** | **Airia Platform** | Multi-agent pipeline coordination, tool registry |
+| **AI Orchestration** | **Autonomous Engine** | Multi-agent pipeline coordination, tool registry |
 | **Agents** | Python (async) | 4 specialized agents (OCR, rules, mapping, PDF) |
 | **Vision** | Gemini Pro | Document image analysis |
 | **LLM Reasoning** | Gemini Pro | Eligibility validation, field mapping logic |
-| **Infrastructure** | FastAPI + Uvicorn | REST API for Airia tool endpoints |
+| **Infrastructure** | FastAPI + Uvicorn | REST API for tool endpoints |
 | **PDF Generation** | ReportLab | Professional form rendering |
 | **Notifications** | Slack Incoming Webhooks | Real-time status updates |
 | **Document Storage** | Microsoft SharePoint | Enterprise document management |
 | **Authentication** | OAuth2 (client-credentials) | Secure Graph API access |
 | **Frontend** | Vanilla JS + HTML5 | Real-time polling UI, HITL modal |
-| **Database** | None (stateless) | Leverage Airia for state management |
-
----
-
-## 11. Evaluation Against Hackathon Criteria
-
-### Technological Implementation ⭐⭐⭐⭐⭐ (9/10)
-- ✅ Full Airia integration (tool manifests, pipeline YAML, tool endpoints)
-- ✅ HITL governance with asyncio pausing/resuming
-- ✅ Multi-system dispatch (Slack + SharePoint)
-- ✅ Async/background task execution
-- ✅ OAuth2 client-credentials flow
-- ❌ Minor: No persistent audit logging
-
-### Design & UX ⭐⭐⭐⭐ (9/10)
-- ✅ Professional enterprise UI (dark theme, Airia branding)
-- ✅ Real-time progress polling with step visualization
-- ✅ Interactive HITL modal with countdown
-- ✅ Live integration status badges
-- ✅ Responsive grid-based layout
-- ❌ Minor: Could add subtle animations
-
-### Potential Impact ⭐⭐⭐⭐ (8/10)
-- ✅ Real enterprise use case (government forms, HR, compliance)
-- ✅ Multi-country support (IN, US, UK, CA)
-- ✅ HITL governance (risk/compliance management)
-- ✅ Reduces manual work from 30–60 min to <3 sec
-- ✅ Scales via Airia orchestration
-- ❌ Currently limited to form filling / could expand to contracts, invoices
-
-### Quality of Idea ⭐⭐⭐⭐⭐ (9/10)
-- ✅ **Novel in Airia ecosystem:** First app to wrap Python agents as Airia-callable tools
-- ✅ **Comprehensive:** Document → validation → mapping → PDF → Slack + SharePoint
-- ✅ **Practical:** Solves real enterprise pain point (manual form filling)
-- ✅ **Governed:** HITL checkpoint ensures compliance
-- ❌ Minor: Document automation is solved, but Airia integration is novel
-
-### **Overall: 87/100** ← *Current assessment*
-### **Target: 90+/100** ← *Achievable with audit logging + broader impact positioning*
-
----
-
-## 12. Future Enhancements
-
-1. **Persistent Workflow History** — SQLite store all submissions + HITL decisions
-2. **Audit Logging** — Compliance trail for all approvals/rejections
-3. **Contract Automation** — Extend beyond forms to contract analysis & signing
-4. **Invoice OCR** — Expense extraction + approval workflow
-5. **Multi-language Support** — Support 20+ document languages via Gemini
-6. **Advanced Analytics** — Dashboard: forms processed, HITL approval rate, fields extracted
-7. **Webhook Callbacks** — Subscribe to workflow completion events
-8. **Batch Processing** — Queue multiple documents; process in parallel
+| **Database** | SQLite / In-Memory | State management and audit persistence |
 
 ---
 
@@ -382,15 +317,13 @@ SHAREPOINT_CLIENT_ID=app_client_id  # (optional)
 4. Run: `cd backend && uvicorn main:app --reload`
 5. Test: Open http://localhost:8000
 
-For Airia integration testing:
+For Orchestration integration testing:
 ```bash
-export AIRIA_API_KEY=your_key
-export AIRIA_PIPELINE_ID=your_pipeline_id
+export FORMPILOT_API_KEY=your_key
 uvicorn main:app --reload
 ```
 
 ---
 
 **FormPilot Team**  
-*Building enterprise-grade AI agents on the Airia platform.*  
-Airia AI Agents Hackathon 2026 — Track 2: Active Agents
+*Building enterprise-grade autonomous AI agents.*

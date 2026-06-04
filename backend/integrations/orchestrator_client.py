@@ -1,15 +1,12 @@
 """
-Airia AI Platform Orchestration Client
+Orchestrator AI Platform Client
 =======================================
-Wraps FormPilot agents as Airia-callable HTTP tool endpoints and enables
-pipeline orchestration through the Airia platform.
+Wraps FormPilot agents as callable HTTP tool endpoints and enables
+pipeline orchestration through an external orchestration platform.
 
-When AIRIA_API_KEY + AIRIA_PIPELINE_ID are configured, the workflow is
-routed through the Airia pipeline engine.  Without credentials the system
+When ORCHESTRATOR_API_KEY + ORCHESTRATOR_PIPELINE_ID are configured, the workflow is
+routed through the external pipeline engine. Without credentials the system
 falls back to identical local orchestration — same agents, same logic.
-
-Airia Community pipeline: https://community.airia.io/FormPilot
-Track: Track 2 — Active Agents
 """
 
 import os
@@ -21,9 +18,9 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Pipeline definition (mirrors what is published to Airia Community)
+# Pipeline definition
 # ---------------------------------------------------------------------------
-AIRIA_PIPELINE_DEFINITION: Dict[str, Any] = {
+PIPELINE_DEFINITION: Dict[str, Any] = {
     "name": "FormPilot — Document-to-Form Pipeline",
     "version": "2.0.0",
     "description": (
@@ -31,7 +28,6 @@ AIRIA_PIPELINE_DEFINITION: Dict[str, Any] = {
         "validate government eligibility (with HITL), map form fields, "
         "generate PDF, dispatch Slack alert & upload to SharePoint."
     ),
-    "track": "Track 2 — Active Agents",
     "steps": [
         {
             "id": "analyze_document",
@@ -100,15 +96,15 @@ AIRIA_PIPELINE_DEFINITION: Dict[str, Any] = {
 }
 
 
-class AiriaClient:
+class OrchestratorClient:
     """
-    Client for the Airia AI Platform.
+    Client for the External Orchestration Platform.
 
-    Exposes FormPilot agents as Airia-callable HTTP tools and supports
-    Airia-orchestrated pipeline execution when credentials are available.
+    Exposes FormPilot agents as callable HTTP tools and supports
+    orchestrated pipeline execution when credentials are available.
     """
 
-    AIRIA_BASE_URL = "https://api.airia.io"
+    ORCHESTRATOR_BASE_URL = "https://api.orchestrator.local"
 
     def __init__(
         self,
@@ -116,17 +112,17 @@ class AiriaClient:
         pipeline_id: Optional[str] = None,
         base_url: Optional[str] = None,
     ) -> None:
-        self.api_key = api_key or os.getenv("AIRIA_API_KEY")
-        self.pipeline_id = pipeline_id or os.getenv("AIRIA_PIPELINE_ID")
-        self.base_url = base_url or os.getenv("AIRIA_BASE_URL", self.AIRIA_BASE_URL)
+        self.api_key = api_key or os.getenv("ORCHESTRATOR_API_KEY")
+        self.pipeline_id = pipeline_id or os.getenv("ORCHESTRATOR_PIPELINE_ID")
+        self.base_url = base_url or os.getenv("ORCHESTRATOR_BASE_URL", self.ORCHESTRATOR_BASE_URL)
         self.configured = bool(self.api_key and self.pipeline_id)
 
         if self.configured:
-            logger.info("Airia client ready — pipeline: %s", self.pipeline_id)
+            logger.info("Orchestration client ready — pipeline: %s", self.pipeline_id)
         else:
             logger.info(
-                "Airia credentials absent — running local orchestration mode. "
-                "Set AIRIA_API_KEY + AIRIA_PIPELINE_ID to route through Airia."
+                "Orchestration credentials absent — running local orchestration mode. "
+                "Set ORCHESTRATOR_API_KEY + ORCHESTRATOR_PIPELINE_ID to route through the platform."
             )
 
     # ------------------------------------------------------------------
@@ -137,9 +133,9 @@ class AiriaClient:
         self, inputs: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
-        Invoke the remote Airia pipeline.
+        Invoke the remote orchestration pipeline.
 
-        Returns the Airia response dict on success, None when not configured
+        Returns the response dict on success, None when not configured
         or when the call fails (caller falls back to local orchestration).
         """
         if not self.configured:
@@ -151,31 +147,31 @@ class AiriaClient:
                 resp = await client.post(
                     url,
                     headers={
-                        "X-Airia-Api-Key": self.api_key,
+                        "X-Orchestrator-Api-Key": self.api_key,
                         "Content-Type": "application/json",
                     },
                     json={"inputs": inputs},
                 )
                 resp.raise_for_status()
-                logger.info("Airia pipeline invocation succeeded.")
+                logger.info("Orchestration pipeline invocation succeeded.")
                 return resp.json()
         except httpx.HTTPStatusError as exc:
             logger.error(
-                "Airia pipeline HTTP error %s: %s",
+                "Orchestration pipeline HTTP error %s: %s",
                 exc.response.status_code,
                 exc.response.text[:300],
             )
         except Exception as exc:
-            logger.error("Airia pipeline error: %s", exc)
+            logger.error("Orchestration pipeline error: %s", exc)
         return None
 
     # ------------------------------------------------------------------
-    # Tool manifest (for Airia tool registry)
+    # Tool manifest (for tool registry)
     # ------------------------------------------------------------------
 
     def get_tool_manifest(self, base_url: str) -> Dict[str, Any]:
         """
-        Return the OpenAPI-compatible tool manifest Airia uses to discover
+        Return the OpenAPI-compatible tool manifest used to discover
         and call our agent tool endpoints.
         """
         return {
@@ -266,7 +262,7 @@ class AiriaClient:
 
     @property
     def pipeline_definition(self) -> Dict[str, Any]:
-        return AIRIA_PIPELINE_DEFINITION
+        return PIPELINE_DEFINITION
 
     def get_pipeline_steps(self) -> List[Dict[str, Any]]:
-        return AIRIA_PIPELINE_DEFINITION["steps"]
+        return PIPELINE_DEFINITION["steps"]

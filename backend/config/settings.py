@@ -33,13 +33,13 @@ class Settings:
     AWS_S3_BUCKET: Optional[str] = os.getenv("AWS_S3_BUCKET")
     
     # ──────────────────────────────────────────────────────────────
-    # Airia Platform Integration
+    # External Orchestration Platform Integration
     # ──────────────────────────────────────────────────────────────
-    AIRIA_API_KEY: Optional[str] = os.getenv("AIRIA_API_KEY")
-    AIRIA_PIPELINE_ID: Optional[str] = os.getenv("AIRIA_PIPELINE_ID")
-    AIRIA_BASE_URL: str = os.getenv("AIRIA_BASE_URL", "https://api.airia.io")
+    ORCHESTRATOR_API_KEY: Optional[str] = os.getenv("ORCHESTRATOR_API_KEY")
+    ORCHESTRATOR_PIPELINE_ID: Optional[str] = os.getenv("ORCHESTRATOR_PIPELINE_ID")
+    ORCHESTRATOR_BASE_URL: str = os.getenv("ORCHESTRATOR_BASE_URL", "https://api.orchestrator.local")
 
-    # FormPilot API (base URL + key for Airia tool call-back)
+    # FormPilot API (base URL + key for orchestrator tool call-back)
     FORMPILOT_API_URL: str = os.getenv("FORMPILOT_API_URL", "http://localhost:8000")
     FORMPILOT_API_KEY: Optional[str] = os.getenv("FORMPILOT_API_KEY")
 

@@ -210,7 +210,7 @@ I'll create mock Aadhaar and visa forms for demo:
 **Day 7 (Mar 19):** Final Polish + Submit
 - UI animations (2h)
 - Bug fixes (1h)
-- Submit to Airia Community (0.5h)
+- Run end-to-end integration tests (0.5h)
 
 ---
 
@@ -323,5 +323,5 @@ I can scaffold the entire project in 4 hours and have Agents 1-2 working by end 
 
 ---
 
-Made with 🚀 for the Airia AI Agent Challenge | Track 2: Active Agents
+Made with 🚀 by the FormPilot Team
 

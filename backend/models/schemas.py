@@ -91,3 +91,27 @@ class WorkflowOutput(BaseModel):
     errors: List[str] = Field(default_factory=list)
     message: Optional[str] = None
     completed_at: Optional[datetime] = None
+
+class CompanyAccount(BaseModel):
+    """Enterprise company account"""
+    account_id: str
+    name: str
+    created_at: datetime
+
+class EmployeeProfile(BaseModel):
+    """Grouped employee entity containing multiple documents"""
+    profile_id: str
+    account_id: str
+    full_name: str
+    dob: Optional[str] = None
+    status: str = "incomplete"
+    created_at: datetime
+    documents: List[Dict] = Field(default_factory=list)
+
+class BulkUploadResponse(BaseModel):
+    """Response for a bulk upload operation"""
+    account_id: str
+    processed_files: int
+    profiles_created: int
+    profiles: List[EmployeeProfile]
+    message: str

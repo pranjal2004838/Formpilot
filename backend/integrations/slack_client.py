@@ -90,7 +90,7 @@ class SlackClient:
                     "type": "mrkdwn",
                     "text": (
                         f"📄  *File:* `{pdf_file_name}`\n"
-                        f"🤖  *Pipeline:* Airia  ·  4-Agent Workflow  ·  Gemini Pro\n"
+                        f"🤖  *Pipeline:* 5-Step Orchestrator  ·  Gemini Pro\n"
                         f"🕐  *Completed:* {timestamp}"
                     ),
                 },

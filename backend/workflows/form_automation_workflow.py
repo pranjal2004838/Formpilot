@@ -5,8 +5,8 @@ Coordinates the 4-agent pipeline, publishes real-time progress into a shared
 state dict (for async polling), handles HITL (human-in-the-loop) approval via
 asyncio.Event, and dispatches Slack + SharePoint after PDF generation.
 
-Airia integration: when AiriaClient is configured the pipeline is invoked
-via the Airia platform; otherwise identical logic runs locally.
+Orchestrator integration: when OrchestratorClient is configured the pipeline is invoked
+via the Orchestrator platform; otherwise identical logic runs locally.
 """
 import asyncio
 import base64
@@ -36,7 +36,7 @@ class FormAutomationWorkflow:
       4. PDF Generator      — ReportLab professional PDF
       5. Notifications      — Slack alert + SharePoint upload
 
-    Optionally routes through Airia when credentials are available.
+    Optionally routes through the external Orchestrator platform when credentials are available.
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class FormAutomationWorkflow:
         gemini_api_key: str,
         slack_client=None,
         sharepoint_client=None,
-        airia_client=None,
+        orchestrator_client=None,
     ) -> None:
         self.gemini_api_key = gemini_api_key
         self.agent_1 = DocumentAnalyzerAgent(gemini_api_key)
@@ -54,7 +54,7 @@ class FormAutomationWorkflow:
         self.agent_5 = BrowserSubmissionAgent()
         self.slack = slack_client
         self.sharepoint = sharepoint_client
-        self.airia = airia_client
+        self.orchestrator = orchestrator_client
         self.workflow_id: Optional[str] = None
         self.start_time: Optional[float] = None
     
@@ -149,30 +149,30 @@ class FormAutomationWorkflow:
 
         try:
             # ============================================================
-            # Optionally route through Airia (when configured)
+            # Optionally route through Orchestrator Platform (when configured)
             # ============================================================
-            if self.airia and self.airia.configured:
-                upd(step=0, step_name="Airia Pipeline", progress=5,
-                    message="Invoking Airia pipeline…",
-                    airia_invoked=True)
-                airia_response = await self.airia.invoke_pipeline(workflow_input)
-                if airia_response:
-                    logger.info("Airia pipeline response received — mapping to WorkflowOutput")
-                    # Map Airia response to WorkflowOutput (structure depends on
-                    # the Airia pipeline's output schema defined in the YAML)
-                    wf_out = airia_response.get("outputs", airia_response)
+            if self.orchestrator and self.orchestrator.configured:
+                upd(step=0, step_name="Orchestrator Pipeline", progress=5,
+                    message="Invoking Orchestrator pipeline…",
+                    orchestrator_invoked=True)
+                orchestrator_response = await self.orchestrator.invoke_pipeline(workflow_input)
+                if orchestrator_response:
+                    logger.info("Orchestrator pipeline response received — mapping to WorkflowOutput")
+                    # Map Orchestrator response to WorkflowOutput (structure depends on
+                    # the Orchestrator pipeline's output schema defined in the YAML)
+                    wf_out = orchestrator_response.get("outputs", orchestrator_response)
                     workflow_output.status = "completed"
                     workflow_output.profile = wf_out.get("profile")
                     workflow_output.validation = wf_out.get("validation")
                     workflow_output.mappings = wf_out.get("mappings")
                     workflow_output.pdf_base64 = wf_out.get("pdf_base64")
                     workflow_output.pdf_file_name = wf_out.get("pdf_file_name")
-                    workflow_output.message = "Completed via Airia pipeline"
+                    workflow_output.message = "Completed via Orchestrator pipeline"
                     workflow_output.completed_at = datetime.now()
                     elapsed_ms = int((time.time() - self.start_time) * 1000)
                     upd(status="completed", progress=100, step=5,
                         step_name="Complete",
-                        message=f"Completed via Airia in {elapsed_ms}ms",
+                        message=f"Completed via Orchestrator in {elapsed_ms}ms",
                         profile=workflow_output.profile,
                         validation=workflow_output.validation,
                         mappings=workflow_output.mappings,
@@ -180,9 +180,9 @@ class FormAutomationWorkflow:
                         pdf_file_name=workflow_output.pdf_file_name,
                         completed_at=datetime.now().isoformat())
                     return workflow_output
-                # Airia unavailable — fall through to local execution
-                logger.warning("Airia pipeline returned nothing; falling back to local execution.")
-                upd(airia_invoked=False)
+                # Orchestrator unavailable — fall through to local execution
+                logger.warning("Orchestrator pipeline returned nothing; falling back to local execution.")
+                upd(orchestrator_invoked=False)
 
             # ============================================================
             # Agent 1: Document Analysis
