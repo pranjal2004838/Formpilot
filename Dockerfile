@@ -25,6 +25,5 @@ COPY . /app
 # Expose port (Cloud Run sets the PORT env variable automatically)
 EXPOSE 8080
 
-# Run the app. Cloud Run injects $PORT. We run from the root directory but specify backend module path or change directory.
-# Since python modules depend on backend/ structure, running via a startup script or uvicorn is best:
-CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080}
+WORKDIR /app/backend
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
